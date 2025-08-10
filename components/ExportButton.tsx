@@ -34,7 +34,7 @@ export default function ExportButton({ propertyData, pitiCalculation, dscrCalcul
       ['Generated', new Date().toLocaleString()],
       ['', ''],
       ['Property Details', ''],
-      ['Address', propertyData.propertyAddress || 'N/A'],
+      ['Address', propertyData.streetAddress || 'N/A'],
       ['Property Type', propertyData.propertyType],
       ['Year Built', propertyData.yearBuilt],
       ['Purchase Price', `$${propertyData.purchasePrice.toLocaleString()}`],

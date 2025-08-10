@@ -1,4 +1,4 @@
-import { PropertyData, PITICalculation, AmortizationRow, DSCRCalculation } from '@/types/property'
+import { PropertyData, PITICalculation, AmortizationRow, DSCRCalculation, HomeSaleProperty } from '@/types/property'
 
 // Utility function to format numbers with comma separators
 export function formatNumber(num: number): string {
@@ -9,8 +9,24 @@ export function formatNumber(num: number): string {
 }
 
 export function calculatePITI(data: PropertyData): PITICalculation {
+  // Safety check for invalid inputs
+  if (data.purchasePrice <= 0 || data.interestRate < 0 || data.loanTerm <= 0) {
+    return {
+      loanAmount: 0,
+      monthlyPrincipalInterest: 0,
+      monthlyTaxes: 0,
+      monthlyInsurance: 0,
+      monthlyPMI: 0,
+      totalMonthlyPITI: 0,
+      annualPITI: 0,
+      downPaymentPercentage: 0,
+      requiresPMI: false,
+      amortizationSchedule: [],
+    }
+  }
+
   const loanAmount = data.purchasePrice - data.downPayment
-  const downPaymentPercentage = (data.downPayment / data.purchasePrice) * 100
+  const downPaymentPercentage = (data.purchasePrice > 0) ? (data.downPayment / data.purchasePrice) * 100 : 0
   const requiresPMI = downPaymentPercentage < 20
   
   // Monthly mortgage payment (P&I)
@@ -18,11 +34,11 @@ export function calculatePITI(data: PropertyData): PITICalculation {
   const totalPayments = data.loanTerm * 12
   
   let monthlyPrincipalInterest = 0
-  if (monthlyRate > 0) {
+  if (monthlyRate > 0 && loanAmount > 0) {
     monthlyPrincipalInterest = loanAmount * 
       (monthlyRate * Math.pow(1 + monthlyRate, totalPayments)) / 
       (Math.pow(1 + monthlyRate, totalPayments) - 1)
-  } else {
+  } else if (loanAmount > 0) {
     monthlyPrincipalInterest = loanAmount / totalPayments
   }
   
@@ -32,7 +48,7 @@ export function calculatePITI(data: PropertyData): PITICalculation {
   
   // PMI calculation (typically 0.5% to 1% of loan amount annually)
   let monthlyPMI = 0
-  if (requiresPMI) {
+  if (requiresPMI && loanAmount > 0) {
     const pmiRate = downPaymentPercentage >= 15 ? 0.005 : 0.01 // 0.5% if 15-19.99%, 1% if <15%
     monthlyPMI = (loanAmount * pmiRate) / 12
   }
@@ -68,6 +84,11 @@ function generateAmortizationSchedule(
   monthlyRate: number,
   months: number
 ): AmortizationRow[] {
+  // Safety check for invalid inputs
+  if (loanAmount <= 0 || monthlyPayment <= 0 || months <= 0) {
+    return []
+  }
+
   const schedule: AmortizationRow[] = []
   let remainingBalance = loanAmount
   
@@ -132,6 +153,26 @@ export function formatCurrency(amount: number): string {
 }
 
 export function calculateDSCR(data: PropertyData, pitiCalculation: PITICalculation): DSCRCalculation {
+  // Safety check for invalid PITI calculation
+  if (!pitiCalculation || pitiCalculation.totalMonthlyPITI <= 0) {
+    return {
+      grossRentalIncome: 0,
+      discountedRentalIncome: 0,
+      totalExpenses: 0,
+      netOperatingIncome: 0,
+      dscrRatio: 0,
+      monthlyCashFlow: 0,
+      annualCashFlow: 0,
+      maxLoanForPositiveDSCR: 0,
+      breakdown: {
+        piti: 0,
+        propertyManagement: 0,
+        maintenance: 0,
+        hoaFees: 0,
+      }
+    }
+  }
+
   // Convert monthly PITI to annual
   const annualPITI = pitiCalculation.totalMonthlyPITI * 12
   
@@ -221,6 +262,11 @@ export function formatPercentage(value: number): string {
 } 
 
 export function calculateCapRate(propertyData: PropertyData, pitiCalculation: PITICalculation): number {
+  // Safety check for invalid PITI calculation
+  if (!pitiCalculation || pitiCalculation.totalMonthlyPITI <= 0) {
+    return 0
+  }
+
   // Calculate Net Operating Income (NOI)
   // NOI = Gross Rental Income - Operating Expenses (excluding mortgage payments)
   
@@ -268,16 +314,44 @@ export function calculateCapRate(propertyData: PropertyData, pitiCalculation: PI
   
   if (propertyValue <= 0) return 0
   
-  // Debug logging
-  console.log('Cap Rate Calculation Debug:', {
-    grossRentalIncome,
-    rentalIncomeDiscount: rentalIncomeDiscount * 100 + '%',
-    netRentalIncome,
-    operatingExpenses,
-    noi,
-    propertyValue,
-    capRate: noi / propertyValue
-  })
-  
   return noi / propertyValue
+} 
+
+export function calculateNetProceeds(propertyData: PropertyData | HomeSaleProperty): {
+  netProceeds: number
+  capitalGainsTax: number
+  totalExpenses: number
+  mortgagePayoff: number
+} {
+  // Handle both PropertyData and HomeSaleProperty interfaces
+  const salePrice = 'salePrice' in propertyData ? propertyData.salePrice : 0
+  const outstandingMortgageBalance = 'outstandingMortgageBalance' in propertyData ? propertyData.outstandingMortgageBalance : 0
+  const realtorCommission = 'realtorCommission' in propertyData ? propertyData.realtorCommission : 0
+  const realtorCommissionInputType = 'realtorCommissionInputType' in propertyData ? propertyData.realtorCommissionInputType : 'percentage'
+  const closingCosts = 'closingCosts' in propertyData ? propertyData.closingCosts : 0
+  const capitalGainsTaxRate = 'capitalGainsTaxRate' in propertyData ? propertyData.capitalGainsTaxRate : 15
+  const originalPurchasePrice = 'originalPurchasePrice' in propertyData ? propertyData.originalPurchasePrice : 0
+
+  // Calculate realtor commission
+  const realtorFee = realtorCommissionInputType === 'percentage' 
+    ? (salePrice * realtorCommission) / 100
+    : realtorCommission
+
+  // Calculate total expenses
+  const totalExpenses = realtorFee + closingCosts
+
+  // Calculate capital gains
+  const adjustedBasis = originalPurchasePrice
+  const capitalGain = salePrice - adjustedBasis
+  const capitalGainsTax = Math.max(0, capitalGain * (capitalGainsTaxRate / 100))
+
+  // Calculate net proceeds
+  const netProceeds = salePrice - outstandingMortgageBalance - totalExpenses - capitalGainsTax
+
+  return {
+    netProceeds: Math.max(0, netProceeds),
+    capitalGainsTax,
+    totalExpenses,
+    mortgagePayoff: outstandingMortgageBalance
+  }
 } 

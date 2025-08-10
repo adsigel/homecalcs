@@ -9,9 +9,9 @@ import ExportButton from '@/components/ExportButton'
 import SampleDataButton from '@/components/SampleDataButton'
 import { PropertyData, PITICalculation } from '@/types/property'
 import { calculatePITI } from '@/utils/calculations'
+import HomeSaleCalculator from '@/components/HomeSaleCalculator'
 
-export default function HomePage() {
-  const [activeCalculator, setActiveCalculator] = useState<CalculatorType>('piti')
+export default function Home() {
   const [propertyData, setPropertyData] = useState<PropertyData>({
     purchasePrice: 0,
     downPayment: 0,
@@ -22,23 +22,35 @@ export default function HomePage() {
     marketValue: 0,
     streetAddress: '',
     propertyType: 'single-family',
-    yearBuilt: new Date().getFullYear(),
+    yearBuilt: 0,
     taxInputType: 'annual',
     insuranceInputType: 'annual',
     downPaymentInputType: 'dollars',
-    // DSCR Calculator defaults
+    // DSCR Calculator inputs
     grossRentalIncome: 0,
     rentalIncomeInputType: 'annual',
-    rentalIncomeDiscount: 25,
-    propertyManagementFee: 10,
+    rentalIncomeDiscount: 0,
+    propertyManagementFee: 0,
     propertyManagementInputType: 'percentage',
     includePropertyManagement: true,
-    maintenanceReserve: 5,
+    maintenanceReserve: 0,
     maintenanceInputType: 'percentage',
     includeMaintenance: true,
     hoaFees: 0,
     hoaInputType: 'annual',
     includeHoaFees: false,
+    // Home Sale Calculator inputs
+    salePrice: 0,
+    outstandingMortgageBalance: 0,
+    realtorCommission: 6,
+    realtorCommissionInputType: 'percentage',
+    closingCosts: 0,
+    capitalGainsTaxRate: 15,
+    originalPurchasePrice: 0,
+    // Calculator mode
+    calculatorMode: 'investment',
+    // Use home sale proceeds as down payment
+    useHomeSaleProceedsAsDownPayment: false,
   })
 
   // Load data from localStorage on component mount
@@ -59,7 +71,7 @@ export default function HomePage() {
     localStorage.setItem('homecalcs-property-data', JSON.stringify(propertyData))
   }, [propertyData])
 
-  const updatePropertyData = (updates: Partial<PropertyData>) => {
+  const handleUpdate = (updates: Partial<PropertyData>) => {
     setPropertyData(prev => ({ ...prev, ...updates }))
   }
 
@@ -68,11 +80,18 @@ export default function HomePage() {
   }
 
   // Calculate PITI for DSCR calculator
-  const pitiCalculation = useMemo(() => calculatePITI(propertyData), [propertyData])
+  const pitiCalculation = useMemo(() => {
+    const calculation = calculatePITI(propertyData)
+    // Only return valid PITI calculation if we have meaningful values
+    if (calculation.totalMonthlyPITI > 0 && propertyData.purchasePrice > 0) {
+      return calculation
+    }
+    return undefined
+  }, [propertyData])
   
   // Calculate DSCR if we have rental income
   const dscrCalculation = useMemo(() => {
-    if (propertyData.grossRentalIncome > 0 && pitiCalculation.totalMonthlyPITI > 0) {
+    if (propertyData.grossRentalIncome > 0 && pitiCalculation?.totalMonthlyPITI && pitiCalculation.totalMonthlyPITI > 0) {
       const { calculateDSCR } = require('@/utils/calculations')
       return calculateDSCR(propertyData, pitiCalculation)
     }
@@ -80,62 +99,39 @@ export default function HomePage() {
   }, [propertyData, pitiCalculation])
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <header className="mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex-1"></div>
-          <div className="text-center flex-1">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              HomeCalcs
-            </h1>
-            <p className="text-xl text-gray-600">
-              Financial calculator tools for homeowners
-            </p>
-          </div>
-          <div className="flex-1 flex justify-end gap-2">
-            <SampleDataButton onLoadSampleData={setPropertyData} />
-            <ExportButton 
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        <header className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">HomeCalcs</h1>
+          <p className="text-lg text-gray-600">Real Estate Investment & Home Sale Calculator</p>
+        </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Panel - Inputs */}
+          <div className="lg:sticky lg:top-8 lg:h-fit">
+            <GlobalInputsPanel
               propertyData={propertyData}
-              pitiCalculation={pitiCalculation}
-              dscrCalculation={dscrCalculation}
+              onUpdate={handleUpdate}
+              onLoadProperty={loadProperty}
             />
           </div>
-        </div>
-      </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[calc(100vh-200px)]">
-        {/* Global Inputs Panel */}
-        <div className="lg:col-span-1">
-          <div className="h-full overflow-y-auto pr-4">
-                            <GlobalInputsPanel
-                  propertyData={propertyData}
-                  onUpdate={updatePropertyData}
-                  onLoadProperty={loadProperty}
+          {/* Right Panel - Outputs */}
+          <div className="space-y-6">
+            {propertyData.calculatorMode === 'homeSale' ? (
+              <HomeSaleCalculator propertyData={propertyData} />
+            ) : (
+              <>
+                <PITICalculator 
+                  propertyData={propertyData} 
+                  onUpdate={handleUpdate}
                 />
-          </div>
-        </div>
-
-        {/* Main Calculator Area */}
-        <div className="lg:col-span-2">
-          <div className="h-full overflow-y-auto pl-4">
-            <CalculatorNavigation 
-              activeCalculator={activeCalculator}
-              onCalculatorChange={setActiveCalculator}
-            />
-            
-            {activeCalculator === 'piti' && (
-              <PITICalculator 
-                propertyData={propertyData}
-                onUpdate={updatePropertyData}
-              />
-            )}
-            
-            {activeCalculator === 'dscr' && (
-              <DSCRCalculator 
-                propertyData={propertyData}
-                onUpdate={updatePropertyData}
-                pitiCalculation={pitiCalculation}
-              />
+                <DSCRCalculator 
+                  propertyData={propertyData} 
+                  onUpdate={handleUpdate}
+                  pitiCalculation={pitiCalculation}
+                />
+              </>
             )}
           </div>
         </div>

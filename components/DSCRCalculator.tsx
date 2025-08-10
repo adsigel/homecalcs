@@ -1,22 +1,35 @@
 'use client'
 
 import React, { useMemo, useState } from 'react'
-import { PropertyData, DSCRCalculation } from '@/types/property'
+import { PropertyData, DSCRCalculation, PITICalculation } from '@/types/property'
 import { calculateDSCR, calculateCapRate, formatCurrency, formatPercentage, formatNumber } from '@/utils/calculations'
 import { Calculator, DollarSign, TrendingUp, AlertTriangle, Building2, Wrench, Home, Calendar, Clock, Percent } from 'lucide-react'
 
 interface DSCRCalculatorProps {
   propertyData: PropertyData
   onUpdate: (updates: Partial<PropertyData>) => void
-  pitiCalculation: any // We'll get this from the parent
+  pitiCalculation: PITICalculation | undefined
 }
 
 export default function DSCRCalculator({ propertyData, onUpdate, pitiCalculation }: DSCRCalculatorProps) {
   const [expenseViewMode, setExpenseViewMode] = useState<'annual' | 'monthly'>('annual')
-  const dscrCalculation = useMemo(() => calculateDSCR(propertyData, pitiCalculation), [propertyData, pitiCalculation])
-  const capRate = useMemo(() => calculateCapRate(propertyData, pitiCalculation), [propertyData, pitiCalculation])
+  
+  // Only calculate DSCR if we have valid PITI data
+  const dscrCalculation = useMemo(() => {
+    if (pitiCalculation && pitiCalculation.totalMonthlyPITI > 0) {
+      return calculateDSCR(propertyData, pitiCalculation)
+    }
+    return undefined
+  }, [propertyData, pitiCalculation])
+  
+  const capRate = useMemo(() => {
+    if (pitiCalculation && pitiCalculation.totalMonthlyPITI > 0) {
+      return calculateCapRate(propertyData, pitiCalculation)
+    }
+    return 0
+  }, [propertyData, pitiCalculation])
 
-  const hasValidInputs = propertyData.grossRentalIncome > 0 && pitiCalculation?.totalMonthlyPITI > 0
+  const hasValidInputs = propertyData.grossRentalIncome > 0 && pitiCalculation?.totalMonthlyPITI && pitiCalculation.totalMonthlyPITI > 0
 
   // Helper function to convert annual to monthly
   const toMonthly = (annualValue: number) => annualValue / 12
@@ -36,7 +49,7 @@ export default function DSCRCalculator({ propertyData, onUpdate, pitiCalculation
       </div>
 
       {/* Results Summary */}
-      {hasValidInputs && (
+      {hasValidInputs && dscrCalculation && (
         <div className="card bg-gradient-to-r from-primary-50 to-blue-50 border-primary-200">
           <h3 className="text-lg font-semibold text-primary-900 mb-4 flex items-center gap-2">
             <TrendingUp className="w-5 h-5" />
@@ -121,8 +134,8 @@ export default function DSCRCalculator({ propertyData, onUpdate, pitiCalculation
         </div>
       )}
 
-      {/* DSCR Breakdown */}
-      {hasValidInputs && (
+      {/* Expense Breakdown */}
+      {hasValidInputs && dscrCalculation && (
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <div>

@@ -37,6 +37,18 @@ export default function SampleDataButton({ onLoadSampleData }: SampleDataButtonP
       hoaFees: 0,
       hoaInputType: 'annual',
       includeHoaFees: false,
+      // Home Sale Calculator sample data
+      salePrice: 500000,
+      outstandingMortgageBalance: 350000,
+      realtorCommission: 6,
+      realtorCommissionInputType: 'percentage',
+      closingCosts: 8000,
+      capitalGainsTaxRate: 15,
+      originalPurchasePrice: 400000,
+      // Calculator mode
+      calculatorMode: 'investment',
+      // Use home sale proceeds as down payment
+      useHomeSaleProceedsAsDownPayment: false,
     }
     
     onLoadSampleData(sampleData)
