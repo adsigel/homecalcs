@@ -4,13 +4,15 @@ import React from 'react'
 import { PropertyData } from '@/types/property'
 import { Home, DollarSign, MapPin, Building2, Calendar, TrendingUp, Wrench } from 'lucide-react'
 import { formatNumber } from '@/utils/calculations'
+import PropertyManager from './PropertyManager'
 
 interface GlobalInputsPanelProps {
   propertyData: PropertyData
   onUpdate: (updates: Partial<PropertyData>) => void
+  onLoadProperty: (property: PropertyData) => void
 }
 
-export default function GlobalInputsPanel({ propertyData, onUpdate }: GlobalInputsPanelProps) {
+export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProperty }: GlobalInputsPanelProps) {
   const handleInputChange = (field: keyof PropertyData, value: string | number) => {
     const numValue = typeof value === 'string' ? parseFloat(value) || 0 : value
     onUpdate({ [field]: numValue })
@@ -36,12 +38,23 @@ export default function GlobalInputsPanel({ propertyData, onUpdate }: GlobalInpu
           </label>
           <input
             type="text"
-            value={propertyData.propertyAddress}
-            onChange={(e) => handleTextChange('propertyAddress', e.target.value)}
-            placeholder="Enter property address"
+            value={propertyData.streetAddress}
+            onChange={(e) => handleTextChange('streetAddress', e.target.value)}
+            placeholder="Enter property address (e.g., 123 Main St, Anytown, USA)"
             className="input-field"
           />
         </div>
+
+        {/* Property Manager - moved up for better UX flow */}
+        <div className="pt-4 border-t border-gray-200">
+          <PropertyManager
+            propertyData={propertyData}
+            onLoadProperty={onLoadProperty}
+            onUpdate={onUpdate}
+          />
+        </div>
+
+        {/* Street Address - removed this redundant field */}
 
         {/* Property Type */}
         <div>

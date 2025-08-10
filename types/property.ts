@@ -6,7 +6,7 @@ export interface PropertyData {
   annualTaxes: number
   annualInsurance: number
   marketValue: number
-  propertyAddress: string
+  streetAddress: string
   propertyType: 'single-family' | 'condo' | 'townhouse' | 'multi-family'
   yearBuilt: number
   taxInputType: 'annual' | 'monthly'

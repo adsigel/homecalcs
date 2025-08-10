@@ -18,7 +18,7 @@ export default function SampleDataButton({ onLoadSampleData }: SampleDataButtonP
       annualTaxes: 5400,
       annualInsurance: 1200,
       marketValue: 450000,
-      propertyAddress: '123 Sample Street, Anytown, USA',
+      streetAddress: '123 Sample Street, Anytown, USA',
       propertyType: 'single-family',
       yearBuilt: 2010,
       taxInputType: 'annual',

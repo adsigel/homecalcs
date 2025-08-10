@@ -51,6 +51,25 @@ Common inputs that may be reused across calculators:
 - Print-friendly reports
 - **Interactive Tooltips**: Add helpful tooltips throughout the interface to explain financial terms, calculation methods, and industry concepts (e.g., DSCR, Cap Rate, NOI, PMI, 1031 Exchange, etc.)
 
+## Property Management System ✅
+
+**Status: Implemented**
+
+- **Save Properties**: Users can save current property inputs with custom names
+- **Load Properties**: Dropdown selector to load previously saved properties
+- **Manage Properties**: Modal interface for viewing, loading, and deleting saved properties
+- **localStorage Integration**: All data persists locally in the browser
+- **Address Management**: Single address field for property identification
+
+### Features:
+- Save button opens a dialog to name and save the current property
+- Property selector dropdown shows all saved properties for quick switching
+- Manage Properties button opens a modal with full property management interface
+- Property list displays with load and delete actions for each property
+- Property manager positioned near address field for better UX flow
+- Automatic property detection when switching between saved properties
+- Clean, focused interface that doesn't clutter the main input area
+
 ## Future Calculator Ideas
 - Refinance calculator
 - Home improvement ROI calculator

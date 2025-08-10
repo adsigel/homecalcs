@@ -20,7 +20,7 @@ export default function HomePage() {
     annualTaxes: 0,
     annualInsurance: 0,
     marketValue: 0,
-    propertyAddress: '',
+    streetAddress: '',
     propertyType: 'single-family',
     yearBuilt: new Date().getFullYear(),
     taxInputType: 'annual',
@@ -63,6 +63,10 @@ export default function HomePage() {
     setPropertyData(prev => ({ ...prev, ...updates }))
   }
 
+  const loadProperty = (property: PropertyData) => {
+    setPropertyData(property)
+  }
+
   // Calculate PITI for DSCR calculator
   const pitiCalculation = useMemo(() => calculatePITI(propertyData), [propertyData])
   
@@ -103,10 +107,11 @@ export default function HomePage() {
         {/* Global Inputs Panel */}
         <div className="lg:col-span-1">
           <div className="h-full overflow-y-auto pr-4">
-            <GlobalInputsPanel 
-              propertyData={propertyData}
-              onUpdate={updatePropertyData}
-            />
+                            <GlobalInputsPanel
+                  propertyData={propertyData}
+                  onUpdate={updatePropertyData}
+                  onLoadProperty={loadProperty}
+                />
           </div>
         </div>
 
