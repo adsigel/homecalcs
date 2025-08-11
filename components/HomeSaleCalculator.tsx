@@ -1,16 +1,16 @@
 'use client'
 
 import React from 'react'
-import { PropertyData } from '@/types/property'
+import { HomeSaleProperty } from '@/types/property'
 import { calculateNetProceeds } from '@/utils/calculations'
 import { DollarSign, TrendingUp, Calculator, Home } from 'lucide-react'
 
 interface HomeSaleCalculatorProps {
-  propertyData: PropertyData
+  property: HomeSaleProperty
 }
 
-export default function HomeSaleCalculator({ propertyData }: HomeSaleCalculatorProps) {
-  const calculation = calculateNetProceeds(propertyData)
+export default function HomeSaleCalculator({ property }: HomeSaleCalculatorProps) {
+  const calculation = calculateNetProceeds(property)
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
@@ -67,26 +67,26 @@ export default function HomeSaleCalculator({ propertyData }: HomeSaleCalculatorP
           <div className="space-y-3">
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Sale Price</span>
-              <span className="font-medium">${propertyData.salePrice.toLocaleString()}</span>
+              <span className="font-medium">${property.salePrice.toLocaleString()}</span>
             </div>
             
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Outstanding Mortgage</span>
-              <span className="font-medium text-red-600">-${propertyData.outstandingMortgageBalance.toLocaleString()}</span>
+              <span className="font-medium text-red-600">-${property.outstandingMortgageBalance.toLocaleString()}</span>
             </div>
             
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Realtor Commission</span>
               <span className="font-medium text-red-600">
-                -${(propertyData.realtorCommissionInputType === 'percentage' 
-                  ? (propertyData.salePrice * propertyData.realtorCommission) / 100
-                  : propertyData.realtorCommission).toLocaleString()}
+                -${(property.realtorCommissionInputType === 'percentage' 
+                  ? (property.salePrice * property.realtorCommission) / 100
+                  : property.realtorCommission).toLocaleString()}
               </span>
             </div>
             
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Closing Costs</span>
-              <span className="font-medium text-red-600">-${propertyData.closingCosts.toLocaleString()}</span>
+              <span className="font-medium text-red-600">-${property.closingCosts.toLocaleString()}</span>
             </div>
           </div>
 
@@ -94,18 +94,18 @@ export default function HomeSaleCalculator({ propertyData }: HomeSaleCalculatorP
           <div className="space-y-3">
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Original Purchase Price</span>
-              <span className="font-medium">${propertyData.originalPurchasePrice.toLocaleString()}</span>
+              <span className="font-medium">${property.originalPurchasePrice.toLocaleString()}</span>
             </div>
             
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Adjusted Basis</span>
-              <span className="font-medium">${propertyData.originalPurchasePrice.toLocaleString()}</span>
+              <span className="font-medium">${property.originalPurchasePrice.toLocaleString()}</span>
             </div>
             
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Capital Gain</span>
               <span className="font-medium text-green-600">
-                ${(propertyData.salePrice - propertyData.originalPurchasePrice).toLocaleString()}
+                ${(property.salePrice - property.originalPurchasePrice).toLocaleString()}
               </span>
             </div>
           </div>
@@ -117,11 +117,11 @@ export default function HomeSaleCalculator({ propertyData }: HomeSaleCalculatorP
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span>Sale Price</span>
-              <span>${propertyData.salePrice.toLocaleString()}</span>
+              <span>${property.salePrice.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-red-600">
               <span>- Outstanding Mortgage</span>
-              <span>-${propertyData.outstandingMortgageBalance.toLocaleString()}</span>
+              <span>-${property.outstandingMortgageBalance.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-red-600">
               <span>- Total Expenses</span>

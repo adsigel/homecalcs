@@ -1,35 +1,35 @@
 'use client'
 
 import React, { useMemo, useState } from 'react'
-import { PropertyData, DSCRCalculation, PITICalculation } from '@/types/property'
+import { InvestmentProperty, DSCRCalculation, PITICalculation } from '@/types/property'
 import { calculateDSCR, calculateCapRate, formatCurrency, formatPercentage, formatNumber } from '@/utils/calculations'
 import { Calculator, DollarSign, TrendingUp, AlertTriangle, Building2, Wrench, Home, Calendar, Clock, Percent } from 'lucide-react'
 
 interface DSCRCalculatorProps {
-  propertyData: PropertyData
-  onUpdate: (updates: Partial<PropertyData>) => void
+  property: InvestmentProperty
+  onUpdate: (updates: Partial<InvestmentProperty>) => void
   pitiCalculation: PITICalculation | undefined
 }
 
-export default function DSCRCalculator({ propertyData, onUpdate, pitiCalculation }: DSCRCalculatorProps) {
+export default function DSCRCalculator({ property, onUpdate, pitiCalculation }: DSCRCalculatorProps) {
   const [expenseViewMode, setExpenseViewMode] = useState<'annual' | 'monthly'>('annual')
   
   // Only calculate DSCR if we have valid PITI data
   const dscrCalculation = useMemo(() => {
     if (pitiCalculation && pitiCalculation.totalMonthlyPITI > 0) {
-      return calculateDSCR(propertyData, pitiCalculation)
+      return calculateDSCR(property, pitiCalculation)
     }
     return undefined
-  }, [propertyData, pitiCalculation])
+  }, [property, pitiCalculation])
   
   const capRate = useMemo(() => {
     if (pitiCalculation && pitiCalculation.totalMonthlyPITI > 0) {
-      return calculateCapRate(propertyData, pitiCalculation)
+      return calculateCapRate(property, pitiCalculation)
     }
     return 0
-  }, [propertyData, pitiCalculation])
+  }, [property, pitiCalculation])
 
-  const hasValidInputs = propertyData.grossRentalIncome > 0 && pitiCalculation?.totalMonthlyPITI && pitiCalculation.totalMonthlyPITI > 0
+  const hasValidInputs = property.grossRentalIncome > 0 && pitiCalculation?.totalMonthlyPITI && pitiCalculation.totalMonthlyPITI > 0
 
   // Helper function to convert annual to monthly
   const toMonthly = (annualValue: number) => annualValue / 12
@@ -127,7 +127,7 @@ export default function DSCRCalculator({ propertyData, onUpdate, pitiCalculation
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Net Operating Income:</span>
-                <span className="font-medium">{formatCurrency(dscrCalculation.grossRentalIncome * (1 - propertyData.rentalIncomeDiscount / 100) - (dscrCalculation.totalExpenses - dscrCalculation.breakdown.piti))}</span>
+                <span className="font-medium">{formatCurrency(dscrCalculation.grossRentalIncome * (1 - property.rentalIncomeDiscount / 100) - (dscrCalculation.totalExpenses - dscrCalculation.breakdown.piti))}</span>
               </div>
             </div>
           </div>
@@ -186,7 +186,7 @@ export default function DSCRCalculator({ propertyData, onUpdate, pitiCalculation
               </span>
             </div>
 
-            {propertyData.includePropertyManagement && (
+            {property.includePropertyManagement && (
               <div className="flex justify-between py-2 border-b border-gray-200">
                 <span className="text-gray-600">Property Management:</span>
                 <span className="font-medium">
@@ -198,7 +198,7 @@ export default function DSCRCalculator({ propertyData, onUpdate, pitiCalculation
               </div>
             )}
 
-            {propertyData.includeMaintenance && (
+            {property.includeMaintenance && (
               <div className="flex justify-between py-2 border-b border-gray-200">
                 <span className="text-gray-600">Maintenance Reserves:</span>
                 <span className="font-medium">
@@ -210,7 +210,7 @@ export default function DSCRCalculator({ propertyData, onUpdate, pitiCalculation
               </div>
             )}
 
-            {propertyData.includeHoaFees && (
+            {property.includeHoaFees && (
               <div className="flex justify-between py-2 border-b border-gray-200">
                 <span className="text-gray-600">HOA Fees:</span>
                 <span className="font-medium">

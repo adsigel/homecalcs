@@ -1,22 +1,23 @@
 'use client'
 
 import React, { useMemo } from 'react'
-import { PropertyData } from '@/types/property'
-import { calculatePITI, validatePropertyData, formatCurrency, formatPercentage, formatNumber } from '@/utils/calculations'
+import { InvestmentProperty, PropertiesCollection } from '@/types/property'
+import { calculatePITIWithHomeSaleProceeds, validatePropertyData, formatCurrency, formatPercentage, formatNumber } from '@/utils/calculations'
 import { Calculator, DollarSign, AlertTriangle, TrendingUp, Calendar } from 'lucide-react'
 
 interface PITICalculatorProps {
-  propertyData: PropertyData
-  onUpdate: (updates: Partial<PropertyData>) => void
+  property: InvestmentProperty
+  onUpdate: (updates: Partial<InvestmentProperty>) => void
+  propertiesCollection?: PropertiesCollection
 }
 
-export default function PITICalculator({ propertyData, onUpdate }: PITICalculatorProps) {
-  const validationErrors = useMemo(() => validatePropertyData(propertyData), [propertyData])
-  const pitiCalculation = useMemo(() => calculatePITI(propertyData), [propertyData])
+export default function PITICalculator({ property, onUpdate, propertiesCollection }: PITICalculatorProps) {
+  const validationErrors = useMemo(() => validatePropertyData(property), [property])
+  const pitiCalculation = useMemo(() => calculatePITIWithHomeSaleProceeds(property, propertiesCollection), [property, propertiesCollection])
   
   const hasValidInputs = validationErrors.length === 0 && 
-    propertyData.purchasePrice > 0 && 
-    propertyData.interestRate > 0
+    property.purchasePrice > 0 && 
+    property.interestRate > 0
 
   return (
     <div className="space-y-6">

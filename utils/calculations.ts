@@ -1,4 +1,4 @@
-import { PropertyData, PITICalculation, AmortizationRow, DSCRCalculation, HomeSaleProperty } from '@/types/property'
+import { PropertyData, PITICalculation, AmortizationRow, DSCRCalculation, HomeSaleProperty, InvestmentProperty, PropertiesCollection } from '@/types/property'
 
 // Utility function to format numbers with comma separators
 export function formatNumber(num: number): string {
@@ -8,7 +8,7 @@ export function formatNumber(num: number): string {
   })
 }
 
-export function calculatePITI(data: PropertyData): PITICalculation {
+export function calculatePITI(data: PropertyData | InvestmentProperty): PITICalculation {
   // Safety check for invalid inputs
   if (data.purchasePrice <= 0 || data.interestRate < 0 || data.loanTerm <= 0) {
     return {
@@ -109,7 +109,7 @@ function generateAmortizationSchedule(
   return schedule
 }
 
-export function validatePropertyData(data: PropertyData): string[] {
+export function validatePropertyData(data: PropertyData | InvestmentProperty): string[] {
   const errors: string[] = []
   
   if (data.purchasePrice <= 0) {
@@ -152,7 +152,7 @@ export function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
-export function calculateDSCR(data: PropertyData, pitiCalculation: PITICalculation): DSCRCalculation {
+export function calculateDSCR(data: PropertyData | InvestmentProperty, pitiCalculation: PITICalculation): DSCRCalculation {
   // Safety check for invalid PITI calculation
   if (!pitiCalculation || pitiCalculation.totalMonthlyPITI <= 0) {
     return {
@@ -261,7 +261,7 @@ export function formatPercentage(value: number): string {
   return `${value.toFixed(2)}%`
 } 
 
-export function calculateCapRate(propertyData: PropertyData, pitiCalculation: PITICalculation): number {
+export function calculateCapRate(propertyData: PropertyData | InvestmentProperty, pitiCalculation: PITICalculation): number {
   // Safety check for invalid PITI calculation
   if (!pitiCalculation || pitiCalculation.totalMonthlyPITI <= 0) {
     return 0
@@ -354,4 +354,32 @@ export function calculateNetProceeds(propertyData: PropertyData | HomeSaleProper
     totalExpenses,
     mortgagePayoff: outstandingMortgageBalance
   }
+} 
+
+export function calculatePITIWithHomeSaleProceeds(
+  property: InvestmentProperty, 
+  propertiesCollection?: PropertiesCollection
+): PITICalculation {
+  // Calculate effective down payment considering home sale proceeds
+  let effectiveDownPayment = property.downPayment
+  
+  if (property.useHomeSaleProceedsAsDownPayment && propertiesCollection && property.selectedHomeSalePropertyId) {
+    const selectedHomeSaleProperty = propertiesCollection.properties.find(
+      p => p.id === property.selectedHomeSalePropertyId && p.calculatorMode === 'homeSale'
+    ) as HomeSaleProperty | undefined
+    
+    if (selectedHomeSaleProperty) {
+      const calculation = calculateNetProceeds(selectedHomeSaleProperty)
+      effectiveDownPayment = calculation.netProceeds
+    }
+  }
+  
+  // Create a modified property object with the effective down payment
+  const adjustedProperty = {
+    ...property,
+    downPayment: effectiveDownPayment
+  }
+  
+  // Call the original calculatePITI function with the adjusted property
+  return calculatePITI(adjustedProperty)
 } 

@@ -1,48 +1,67 @@
-# Multi-Property Architecture Proposal
+# Multi-Property Architecture Implementation
 
-## Current State & Issues
+## Overview
+This document outlines the implementation plan for transitioning from a single-property calculator to a multi-property system that allows users to manage separate home sale and investment property scenarios, with the ability to use home sale proceeds as down payment for investment properties.
 
-### Current Architecture
-The application currently uses a single `PropertyData` interface that combines both home sale and investment property data:
+## Test Cases & Requirements
 
+### Test Case 1: Home Sale Property (246 Hampshire St, Cambridge)
+**Property Details:**
+- Street Address: 246 Hampshire St, Cambridge
+- Sale Price: $825,000
+- Outstanding Mortgage Balance: $439,200
+- Original Purchase Price: $595,000
+- Closing Costs: $10,000
+- Realtor Commission: 5%
+- Capital Gains Tax Rate: 15%
+- Expected Net Proceeds: $334,550
+
+**Functionality Requirements:**
+- User can manually input all property details
+- Calculator shows detailed breakdown of sale costs
+- Results include net proceeds calculation
+- Property can be saved with a descriptive name
+
+### Test Case 2: Investment Property (190 Shute St, Everett)
+**Property Details:**
+- Street Address: 190 Shute St, Everett
+- Purchase Price: $800,000
+- Down Payment: $334,550 (from 246 Hampshire sale proceeds)
+- Interest Rate: 7%
+- Property Taxes: $0 (for testing purposes)
+- Annual Insurance: $3,500
+- Monthly Rental Income: $6,375
+- Vacancy Discount: 25%
+- Property Management: Excluded
+- Maintenance Reserve: Excluded
+- HOA Fees: Excluded
+
+**Expected Results:**
+- DSCR: ~1.4
+- Cap Rate: ~6.7%
+- Monthly Cash Flow: ~$1,474
+
+**Functionality Requirements:**
+- User can manually input all property details
+- Calculator shows PITI, DSCR, Cap Rate, and cash flow
+- Option to use home sale proceeds as down payment
+- Property can be saved with a descriptive name
+
+### Test Case 3: Property Management
+**Requirements:**
+- Each property can be saved separately
+- Each property can be loaded independently
+- Properties maintain their individual calculator modes
+- Easy switching between saved properties
+
+## Implementation Approach
+
+### Data Structure (Option B: Single Properties Collection)
 ```typescript
-interface PropertyData {
-  // Investment Property fields
-  purchasePrice: number
-  downPayment: number
-  interestRate: number
-  // ... other investment fields
-  
-  // Home Sale fields  
-  salePrice: number
-  outstandingMortgageBalance: number
-  originalPurchasePrice: number
-  // ... other home sale fields
-  
-  // Shared fields
-  calculatorMode: 'investment' | 'homeSale'
-  useHomeSaleProceedsAsDownPayment: boolean
-}
-```
-
-### Problems with Current Approach
-
-1. **Data Mixing**: Home sale and investment property data are mixed in one object, making it confusing
-2. **Calculator Mode Dependency**: The app switches between "modes" but the underlying data structure doesn't reflect real-world scenarios
-3. **Workflow Confusion**: Users expect to work with two separate properties (selling one, buying another)
-4. **Data Persistence**: Saving/loading properties becomes complex when data is mixed
-5. **Validation Complexity**: Validation rules differ between property types but are applied to the same object
-6. **Export Issues**: Exporting data doesn't clearly separate the two properties
-
-## Proposed Architecture
-
-### New Data Structure
-
-```typescript
-// Separate interfaces for each property type
+// Individual property interfaces
 interface HomeSaleProperty {
   id: string
-  name: string // e.g., "Current Home - 246 Hampshire St"
+  name: string
   streetAddress: string
   salePrice: number
   outstandingMortgageBalance: number
@@ -51,14 +70,12 @@ interface HomeSaleProperty {
   closingCosts: number
   capitalGainsTaxRate: number
   originalPurchasePrice: number
-  originalPurchaseDate?: Date
-  improvements?: number // capital improvements for tax basis
-  estimatedSaleDate?: Date
+  calculatorMode: 'homeSale'
 }
 
 interface InvestmentProperty {
   id: string
-  name: string // e.g., "Investment Property - 123 Main St"
+  name: string
   streetAddress: string
   purchasePrice: number
   downPayment: number
@@ -69,6 +86,9 @@ interface InvestmentProperty {
   marketValue: number
   propertyType: 'single-family' | 'condo' | 'townhouse' | 'multi-family'
   yearBuilt: number
+  taxInputType: 'annual' | 'monthly'
+  insuranceInputType: 'annual' | 'monthly'
+  downPaymentInputType: 'dollars' | 'percentage'
   
   // DSCR Calculator inputs
   grossRentalIncome: number
@@ -84,208 +104,122 @@ interface InvestmentProperty {
   hoaInputType: 'annual' | 'monthly'
   includeHoaFees: boolean
   
-  // Tax and insurance input types
-  taxInputType: 'annual' | 'monthly'
-  insuranceInputType: 'annual' | 'monthly'
-  downPaymentInputType: 'dollars' | 'percentage'
+  calculatorMode: 'investment'
 }
 
-// Combined data structure for the application
-interface CombinedPropertyData {
-  id: string
-  name: string // e.g., "Home Sale + Investment Purchase"
-  createdAt: Date
-  updatedAt: Date
-  
-  // The two properties
-  homeSaleProperty: HomeSaleProperty | null
-  investmentProperty: InvestmentProperty | null
-  
-  // Cross-property logic
-  useHomeSaleProceedsAsDownPayment: boolean
-  customDownPaymentAmount?: number // if not using full proceeds
-  
-  // Application state
-  currentView: 'homeSale' | 'investment' | 'summary' | 'comparison'
-  
-  // Calculated results
-  homeSaleResults?: HomeSaleCalculation
-  investmentResults?: InvestmentCalculation
-  combinedResults?: CombinedCalculation
-}
+// Union type for all properties
+type Property = HomeSaleProperty | InvestmentProperty
 
-// Calculation result interfaces
-interface HomeSaleCalculation {
-  netProceeds: number
-  capitalGainsTax: number
-  totalExpenses: number
-  mortgagePayoff: number
-  estimatedClosingDate: Date
-}
-
-interface InvestmentCalculation {
-  piti: PITICalculation
-  dscr: DSCRCalculation
-  capRate: number
-  cashFlow: CashFlowAnalysis
-}
-
-interface CombinedCalculation {
-  effectiveDownPayment: number
-  remainingProceeds: number
-  totalInvestment: number
-  roi: number
-  breakEvenAnalysis: BreakEvenAnalysis
+// Properties collection stored in localStorage
+interface PropertiesCollection {
+  properties: Property[]
+  activePropertyId: string | null
 }
 ```
 
-### Component Structure
+### Storage Strategy
+- **localStorage Key**: `homecalcs-properties`
+- **Structure**: Array of Property objects with active property tracking
+- **Migration**: Convert existing `PropertyData` to individual properties
 
-```
-components/
-├── PropertyManager/
-│   ├── PropertyList.tsx          # List of saved property combinations
-│   ├── PropertyCard.tsx          # Individual property combination card
-│   ├── SavePropertyDialog.tsx    # Save current combination
-│   └── LoadPropertyDialog.tsx    # Load saved combination
-├── HomeSaleCalculator/
-│   ├── HomeSaleForm.tsx          # Form for home sale property
-│   ├── HomeSaleResults.tsx       # Results display
-│   └── HomeSaleSummary.tsx       # Summary card
-├── InvestmentCalculator/
-│   ├── InvestmentForm.tsx        # Form for investment property
-│   ├── InvestmentResults.tsx     # Results display
-│   └── InvestmentSummary.tsx     # Summary card
-├── CombinedView/
-│   ├── CombinedSummary.tsx       # Overall summary
-│   ├── ProceedsFlow.tsx          # Visual flow of proceeds
-│   ├── ComparisonTable.tsx       # Side-by-side comparison
-│   └── ExportCombined.tsx        # Export both properties
-└── Navigation/
-    ├── PropertyTabs.tsx          # Tab navigation between properties
-    └── ViewSelector.tsx          # Switch between different views
-```
+### Component Updates
 
-### User Experience Flow
+#### 1. PropertyManager Component
+- Display list of saved properties
+- Allow saving current property state
+- Enable switching between properties
+- Show property type indicator (home sale vs investment)
 
-1. **Property Setup**
-   - User creates a new property combination
-   - Names the combination (e.g., "Selling Hampshire St, Buying Main St")
-   - Can work on either property independently
+#### 2. Main Page (app/page.tsx)
+- Manage active property state
+- Handle property switching
+- Maintain backward compatibility during transition
 
-2. **Home Sale Property**
-   - Fill out current home details
-   - Calculate net proceeds
-   - See detailed breakdown of costs and taxes
+#### 3. Calculator Components
+- Update to work with individual property types
+- Maintain existing calculation logic
+- Add property type-specific validation
 
-3. **Investment Property**
-   - Fill out new property details
-   - Option to use home sale proceeds as down payment
-   - Calculate PITI, DSCR, Cap Rate
-   - See cash flow analysis
+## Implementation Phases
 
-4. **Combined Analysis**
-   - View how proceeds flow from sale to purchase
-   - See combined ROI and investment metrics
-   - Compare different scenarios
+### Phase 1: Foundation (Week 1)
+- [ ] Update `types/property.ts` with new interfaces
+- [ ] Create migration utility for existing data
+- [ ] Update `PropertyManager` component for new structure
+- [ ] Test data persistence and loading
 
-5. **Save & Export**
-   - Save the entire combination
-   - Export comprehensive reports
-   - Share with advisors
+### Phase 2: Calculator Integration (Week 2)
+- [ ] Update `HomeSaleCalculator` for new data structure
+- [ ] Update `PITICalculator` and `DSCRCalculator` for new data structure
+- [ ] Test calculations with new property types
+- [ ] Verify all test case calculations work correctly
 
-## Implementation Plan
+### Phase 3: User Experience (Week 3)
+- [ ] Implement property switching UI
+- [ ] Add property type indicators
+- [ ] Test property save/load functionality
+- [ ] Verify test case workflows end-to-end
 
-### Phase 1: Data Structure & Types
-- [ ] Create new interfaces in `types/property.ts`
-- [ ] Update existing calculation functions to work with new types
-- [ ] Create migration utilities for existing data
+### Phase 4: Polish & Testing (Week 4)
+- [ ] Add property validation
+- [ ] Implement error handling
+- [ ] Test edge cases and data integrity
+- [ ] Performance optimization
 
-### Phase 2: Core Components
-- [ ] Refactor `PropertyManager` to handle property combinations
-- [ ] Create separate `HomeSaleCalculator` and `InvestmentCalculator` components
-- [ ] Implement `CombinedView` component
+## Success Criteria
 
-### Phase 3: State Management
-- [ ] Update main page to use `CombinedPropertyData`
-- [ ] Implement proper state management for two properties
-- [ ] Add validation for property combinations
+### Functional Requirements
+- [ ] All test case calculations produce expected results
+- [ ] Properties can be saved and loaded independently
+- [ ] Calculator mode is property-specific
+- [ ] No data loss during property switching
 
-### Phase 4: Enhanced Features
-- [ ] Add property combination templates
-- [ ] Implement scenario comparison
-- [ ] Enhanced export functionality
-- [ ] Property combination sharing
+### Technical Requirements
+- [ ] Clean separation between property types
+- [ ] Efficient state management
+- [ ] Proper TypeScript typing
+- [ ] Maintainable code structure
 
-### Phase 5: Advanced Features
-- [ ] Timeline planning (sale date vs. purchase date)
-- [ ] Tax optimization scenarios
-- [ ] Multiple investment properties
-- [ ] Portfolio analysis
+### User Experience Requirements
+- [ ] Intuitive property management
+- [ ] Clear property type identification
+- [ ] Smooth transitions between properties
+- [ ] Consistent UI patterns
 
-## Benefits of New Architecture
-
-### For Users
-1. **Clearer Workflow**: Separate properties make the process intuitive
-2. **Better Data Organization**: Each property has its own dedicated form
-3. **Enhanced Analysis**: Combined calculations provide better insights
-4. **Easier Comparison**: Can compare different property combinations
-5. **Better Export**: Clear separation in reports and exports
-
-### For Developers
-1. **Cleaner Code**: Separation of concerns
-2. **Easier Testing**: Test each property type independently
-3. **Better Maintainability**: Clear interfaces and responsibilities
-4. **Extensibility**: Easy to add new property types or features
-5. **Type Safety**: Better TypeScript support
-
-### For Business Logic
-1. **Realistic Scenarios**: Matches actual user workflows
-2. **Better Calculations**: Can optimize across both properties
-3. **Enhanced Validation**: Property-specific validation rules
-4. **Future Growth**: Easy to add commercial properties, etc.
-
-## Migration Strategy
+## Risk Mitigation
 
 ### Data Migration
-1. **Automatic Migration**: Convert existing `PropertyData` to `CombinedPropertyData`
-2. **Backward Compatibility**: Maintain support for old format during transition
-3. **User Notification**: Inform users about new features and data structure
+- Implement automatic migration from existing format
+- Preserve user data during transition
+- Add rollback capability if issues arise
 
-### Component Migration
-1. **Gradual Rollout**: Implement new components alongside existing ones
-2. **Feature Flags**: Allow users to opt into new interface
-3. **Fallback Support**: Ensure old functionality continues to work
+### Backward Compatibility
+- Maintain existing functionality during transition
+- Gradual rollout of new features
+- Clear user communication about changes
 
-### User Education
-1. **Tutorial**: Walk users through new workflow
-2. **Documentation**: Clear guides for new features
-3. **Support**: Help users migrate existing data
+### Testing Strategy
+- Unit tests for new data structures
+- Integration tests for property switching
+- End-to-end tests for test case workflows
+- Performance testing for multiple properties
 
-## Technical Considerations
+## Future Enhancements
 
-### Performance
-- Lazy load property data
-- Memoize calculations
-- Efficient state updates
+### Phase 5: Advanced Features
+- Property combination templates
+- Scenario comparison tools
+- Enhanced export functionality
+- Property sharing capabilities
 
-### Storage
-- Local storage for property combinations
-- Export/import functionality
-- Cloud sync (future consideration)
-
-### Accessibility
-- Clear navigation between properties
-- Consistent form patterns
-- Screen reader support
-
-### Mobile Support
-- Responsive design for all components
-- Touch-friendly interfaces
-- Mobile-optimized workflows
+### Phase 6: Portfolio Management
+- Multiple investment properties
+- Portfolio-level analysis
+- Risk assessment tools
+- Investment timeline planning
 
 ## Conclusion
 
-The proposed multi-property architecture addresses the fundamental mismatch between the current single-property data model and the real-world scenario of selling one property to buy another. This new approach will provide users with a more intuitive, powerful, and realistic tool for their property investment decisions.
+This implementation plan provides a clear path to transition from the current single-property architecture to a robust multi-property system. By focusing on specific test cases and implementing incrementally, we can ensure a smooth transition while maintaining application stability and user experience quality.
 
-The implementation can be done incrementally, ensuring that existing functionality continues to work while new features are added. The result will be a more professional, user-friendly application that better serves the needs of real estate investors and home buyers. 
+The new architecture will better serve real-world use cases where users need to manage separate home sale and investment scenarios, with the flexibility to use proceeds from one transaction to fund another. 

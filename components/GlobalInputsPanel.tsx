@@ -1,47 +1,60 @@
 'use client'
 
 import React from 'react'
-import { PropertyData } from '@/types/property'
+import { Property, HomeSaleProperty, InvestmentProperty, PropertiesCollection } from '@/types/property'
 import { Home, DollarSign, MapPin, Building2, Calendar, TrendingUp, Wrench, Calculator } from 'lucide-react'
 import { formatNumber, calculateNetProceeds } from '@/utils/calculations'
-import PropertyManager from './PropertyManager'
 
 interface GlobalInputsPanelProps {
-  propertyData: PropertyData
-  onUpdate: (updates: Partial<PropertyData>) => void
-  onLoadProperty: (property: PropertyData) => void
+  property: Property
+  onUpdate: (updates: Partial<Property>) => void
+  propertiesCollection?: PropertiesCollection
 }
 
-export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProperty }: GlobalInputsPanelProps) {
-  const handleInputChange = (field: keyof PropertyData, value: string | number) => {
+export default function GlobalInputsPanel({ property, onUpdate, propertiesCollection }: GlobalInputsPanelProps) {
+  const handleInputChange = (field: string, value: string | number) => {
     const numValue = typeof value === 'string' ? parseFloat(value) || 0 : value
-    onUpdate({ [field]: numValue })
+    onUpdate({ [field]: numValue } as Partial<Property>)
   }
 
-  const handleTextChange = (field: keyof PropertyData, value: string) => {
-    onUpdate({ [field]: value })
+  const handleTextChange = (field: string, value: string) => {
+    onUpdate({ [field]: value } as Partial<Property>)
   }
 
-  const handleToggle = (field: keyof PropertyData, value: boolean) => {
-    onUpdate({ [field]: value })
+  const handleToggle = (field: string, value: boolean) => {
+    onUpdate({ [field]: value } as Partial<Property>)
   }
 
-  const handleSelectChange = (field: keyof PropertyData, value: string) => {
-    onUpdate({ [field]: value })
+  const handleSelectChange = (field: string, value: string) => {
+    onUpdate({ [field]: value } as Partial<Property>)
   }
 
-  const handleModeChange = (mode: 'investment' | 'homeSale') => {
-    onUpdate({ calculatorMode: mode })
-  }
-
-  // Calculate home sale proceeds for down payment
+  // Calculate home sale proceeds for down payment (only for investment properties)
   const getHomeSaleProceeds = () => {
-    // Check if we have valid home sale data (regardless of current calculator mode)
-    if (propertyData.salePrice > 0 && propertyData.originalPurchasePrice > 0) {
-      const calculation = calculateNetProceeds(propertyData)
-      return calculation.netProceeds
-    }
-    return 0
+    if (property.calculatorMode !== 'investment' || !propertiesCollection) return 0
+    
+    const investmentProperty = property as InvestmentProperty
+    if (!investmentProperty.selectedHomeSalePropertyId) return 0
+    
+    // Find the selected home sale property
+    const selectedHomeSaleProperty = propertiesCollection.properties.find(
+      p => p.id === investmentProperty.selectedHomeSalePropertyId && p.calculatorMode === 'homeSale'
+    ) as HomeSaleProperty | undefined
+    
+    if (!selectedHomeSaleProperty) return 0
+    
+    // Calculate proceeds from the selected property
+    const calculation = calculateNetProceeds(selectedHomeSaleProperty)
+    return calculation.netProceeds
+  }
+
+  // Get available home sale properties for selection
+  const getAvailableHomeSaleProperties = () => {
+    if (!propertiesCollection) return []
+    
+    return propertiesCollection.properties.filter(
+      p => p.calculatorMode === 'homeSale'
+    ) as HomeSaleProperty[]
   }
 
   // Check if home sale proceeds are available
@@ -51,45 +64,31 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
 
   // Get the effective down payment value
   const getEffectiveDownPayment = () => {
-    if (propertyData.useHomeSaleProceedsAsDownPayment) {
-      const proceeds = getHomeSaleProceeds()
-      if (proceeds > 0) {
-        return proceeds
-      }
+    if (property.calculatorMode !== 'investment') return 0
+    
+    const investmentProperty = property as InvestmentProperty
+    if (investmentProperty.useHomeSaleProceedsAsDownPayment && hasHomeSaleProceeds()) {
+      return getHomeSaleProceeds()
     }
-    return propertyData.downPayment
+    return investmentProperty.downPayment
   }
+
+  const isHomeSaleProperty = property.calculatorMode === 'homeSale'
+  const isInvestmentProperty = property.calculatorMode === 'investment'
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 h-full overflow-y-auto">
-      {/* Calculator Mode Toggle */}
+      {/* Property Type Display */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-3">
-          Calculator Mode
-        </label>
-        <div className="flex bg-gray-100 rounded-lg p-1">
-          <button
-            onClick={() => handleModeChange('investment')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-              propertyData.calculatorMode === 'investment'
-                ? 'bg-white text-primary-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            <Calculator className="w-4 h-4" />
-            Investment Property
-          </button>
-          <button
-            onClick={() => handleModeChange('homeSale')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-              propertyData.calculatorMode === 'homeSale'
-                ? 'bg-white text-primary-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            <Home className="w-4 h-4" />
-            Home Sale
-          </button>
+        <div className="flex items-center gap-2 mb-3">
+          {isHomeSaleProperty ? (
+            <Home className="w-5 h-5 text-blue-600" />
+          ) : (
+            <Building2 className="w-5 h-5 text-green-600" />
+          )}
+          <span className="text-sm font-medium text-gray-700">
+            {isHomeSaleProperty ? 'Home Sale Property' : 'Investment Property'}
+          </span>
         </div>
       </div>
 
@@ -105,7 +104,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
             </label>
             <input
               type="text"
-              value={propertyData.streetAddress}
+              value={property.streetAddress}
               onChange={(e) => onUpdate({ streetAddress: e.target.value })}
               placeholder="Enter property address"
               className="input-field w-full"
@@ -114,16 +113,18 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
 
           {/* Property Manager - moved up for better UX flow */}
           <div className="pt-4 border-t border-gray-200">
-            <PropertyManager
+            {/* This component is no longer needed as PropertyManager is integrated into Property */}
+            {/* For now, we'll just show a placeholder or remove if not used */}
+            {/* <PropertyManager
               propertyData={propertyData}
               onLoadProperty={onLoadProperty}
               onUpdate={onUpdate}
-            />
+            /> */}
           </div>
         </div>
 
         {/* Investment Property Inputs */}
-        {propertyData.calculatorMode === 'investment' && (
+        {isInvestmentProperty && (
           <>
             {/* Purchase Details */}
             <div>
@@ -137,7 +138,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={propertyData.useHomeSaleProceedsAsDownPayment}
+                    checked={property.useHomeSaleProceedsAsDownPayment}
                     onChange={(e) => handleToggle('useHomeSaleProceedsAsDownPayment', e.target.checked)}
                     className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                   />
@@ -145,21 +146,62 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                     Use Home Sale Proceeds as Down Payment
                   </span>
                 </label>
-                {propertyData.useHomeSaleProceedsAsDownPayment && (
-                  <div className="mt-2 ml-6">
-                    {hasHomeSaleProceeds() ? (
-                      <p className="text-xs text-blue-600">
-                        Down payment will be automatically set to ${getHomeSaleProceeds().toLocaleString()} from home sale proceeds
-                      </p>
+                
+                {property.useHomeSaleProceedsAsDownPayment && (
+                  <div className="mt-3 ml-6 space-y-3">
+                    {/* Home Sale Property Selection */}
+                    <div>
+                      <label className="block text-sm font-medium text-blue-800 mb-1">
+                        Select Home Sale Property
+                      </label>
+                      <select
+                        value={property.selectedHomeSalePropertyId || ''}
+                        onChange={(e) => onUpdate({ selectedHomeSalePropertyId: e.target.value || undefined })}
+                        className="w-full px-3 py-2 border border-blue-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">-- Select a home sale property --</option>
+                        {getAvailableHomeSaleProperties().map((homeSaleProperty) => (
+                          <option key={homeSaleProperty.id} value={homeSaleProperty.id}>
+                            {homeSaleProperty.name || homeSaleProperty.streetAddress || 'Unnamed Property'} - 
+                            ${calculateNetProceeds(homeSaleProperty).netProceeds.toLocaleString()} net proceeds
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    {/* Proceeds Display */}
+                    {property.selectedHomeSalePropertyId && hasHomeSaleProceeds() ? (
+                      <div className="p-2 bg-blue-100 rounded border border-blue-300">
+                        <p className="text-xs text-blue-800">
+                          <strong>Selected Property:</strong> {
+                            getAvailableHomeSaleProperties().find(p => p.id === property.selectedHomeSalePropertyId)?.name || 
+                            getAvailableHomeSaleProperties().find(p => p.id === property.selectedHomeSalePropertyId)?.streetAddress || 
+                            'Unknown Property'
+                          }
+                        </p>
+                        <p className="text-xs text-blue-800 mt-1">
+                          <strong>Net Proceeds:</strong> ${getHomeSaleProceeds().toLocaleString()}
+                        </p>
+                        <p className="text-xs text-blue-700 mt-1">
+                          Down payment will be automatically set to this amount
+                        </p>
+                      </div>
+                    ) : property.selectedHomeSalePropertyId ? (
+                      <div className="p-2 bg-amber-100 rounded border border-amber-300">
+                        <p className="text-xs text-amber-800">
+                          <strong>Warning:</strong> The selected home sale property has no net proceeds calculated.
+                        </p>
+                        <p className="text-xs text-amber-700 mt-1">
+                          Please fill out the home sale property details first.
+                        </p>
+                      </div>
                     ) : (
                       <div className="text-xs text-amber-600">
                         <p>To use home sale proceeds as down payment, you need:</p>
                         <ul className="list-disc list-inside mt-1 ml-2">
-                          {propertyData.salePrice <= 0 && <li>Sale price of your current home</li>}
-                          {propertyData.originalPurchasePrice <= 0 && <li>Original purchase price</li>}
-                          {propertyData.outstandingMortgageBalance <= 0 && <li>Outstanding mortgage balance</li>}
+                          <li>At least one home sale property with calculated net proceeds</li>
+                          <li>Select the specific home sale property above</li>
                         </ul>
-                        <p className="mt-1">Fill out the Home Sale calculator first, then return here.</p>
                       </div>
                     )}
                   </div>
@@ -174,7 +216,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                     Property Type
                   </label>
                   <select
-                    value={propertyData.propertyType}
+                    value={property.propertyType}
                     onChange={(e) => handleTextChange('propertyType', e.target.value)}
                     className="input-field"
                   >
@@ -193,7 +235,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                   </label>
                   <input
                     type="number"
-                    value={propertyData.yearBuilt}
+                    value={property.yearBuilt}
                     onChange={(e) => handleInputChange('yearBuilt', e.target.value)}
                     min="1800"
                     max={new Date().getFullYear() + 1}
@@ -209,7 +251,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                   </label>
                   <input
                     type="text"
-                    value={formatNumber(propertyData.marketValue)}
+                    value={formatNumber(property.marketValue)}
                     onChange={(e) => {
                       const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
                       handleInputChange('marketValue', value)
@@ -227,7 +269,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                   </label>
                   <input
                     type="text"
-                    value={formatNumber(propertyData.purchasePrice)}
+                    value={formatNumber(property.purchasePrice)}
                     onChange={(e) => {
                       const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
                       handleInputChange('purchasePrice', value)
@@ -245,8 +287,12 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                     <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
                       <DollarSign className="w-4 h-4" />
                       Down Payment
-                      {propertyData.useHomeSaleProceedsAsDownPayment && hasHomeSaleProceeds() && (
-                        <span className="text-xs text-blue-600">(from home sale)</span>
+                      {property.useHomeSaleProceedsAsDownPayment && hasHomeSaleProceeds() && (
+                        <span className="text-xs text-blue-600">
+                          (from {getAvailableHomeSaleProperties().find(p => p.id === property.selectedHomeSalePropertyId)?.name || 
+                                  getAvailableHomeSaleProperties().find(p => p.id === property.selectedHomeSalePropertyId)?.streetAddress || 
+                                  'selected home sale property'})
+                        </span>
                       )}
                     </label>
                     <div className="flex items-center space-x-2">
@@ -254,7 +300,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                         type="button"
                         onClick={() => onUpdate({ downPaymentInputType: 'dollars' })}
                         className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                          propertyData.downPaymentInputType === 'dollars' 
+                          property.downPaymentInputType === 'dollars' 
                             ? 'bg-primary-600 text-white' 
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
@@ -265,7 +311,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                         type="button"
                         onClick={() => onUpdate({ downPaymentInputType: 'percentage' })}
                         className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                          propertyData.downPaymentInputType === 'percentage' 
+                          property.downPaymentInputType === 'percentage' 
                             ? 'bg-primary-600 text-white' 
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
@@ -275,20 +321,20 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                     </div>
                   </div>
                   <input
-                    type={propertyData.downPaymentInputType === 'percentage' ? 'number' : 'text'}
-                    value={propertyData.downPaymentInputType === 'percentage' 
-                      ? (propertyData.purchasePrice > 0 ? ((getEffectiveDownPayment() / propertyData.purchasePrice) * 100) : 0) || ''
+                    type={property.downPaymentInputType === 'percentage' ? 'number' : 'text'}
+                    value={property.downPaymentInputType === 'percentage' 
+                      ? (property.purchasePrice > 0 ? ((getEffectiveDownPayment() / property.purchasePrice) * 100) : 0) || ''
                       : formatNumber(getEffectiveDownPayment())
                     }
                     onChange={(e) => {
-                      if (propertyData.useHomeSaleProceedsAsDownPayment) {
+                      if (property.useHomeSaleProceedsAsDownPayment) {
                         // Don't allow manual changes when using home sale proceeds
                         return
                       }
                       const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
-                      if (propertyData.downPaymentInputType === 'percentage') {
+                      if (property.downPaymentInputType === 'percentage') {
                         const percentageValue = value / 100
-                        const dollarValue = propertyData.purchasePrice * percentageValue
+                        const dollarValue = property.purchasePrice * percentageValue
                         handleInputChange('downPayment', dollarValue)
                       } else {
                         handleInputChange('downPayment', value)
@@ -296,20 +342,20 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                     }}
                     placeholder="0"
                     min="0"
-                    step={propertyData.downPaymentInputType === 'percentage' ? 0.1 : 1000}
-                    className={`input-field ${propertyData.useHomeSaleProceedsAsDownPayment ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                    disabled={propertyData.useHomeSaleProceedsAsDownPayment}
+                    step={property.downPaymentInputType === 'percentage' ? 0.1 : 1000}
+                    className={`input-field ${property.useHomeSaleProceedsAsDownPayment ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    disabled={property.useHomeSaleProceedsAsDownPayment}
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    {propertyData.downPaymentInputType === 'percentage' ? 'Percentage of purchase price' : 'Dollar amount'}
-                    {propertyData.downPaymentInputType === 'percentage' && propertyData.purchasePrice > 0 && getEffectiveDownPayment() > 0 && (
+                    {property.downPaymentInputType === 'percentage' ? 'Percentage of purchase price' : 'Dollar amount'}
+                    {property.downPaymentInputType === 'percentage' && property.purchasePrice > 0 && getEffectiveDownPayment() > 0 && (
                       <span className="block mt-1 text-gray-600">
                         Dollar amount: {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(getEffectiveDownPayment())}
                       </span>
                     )}
-                    {propertyData.downPaymentInputType === 'dollars' && propertyData.purchasePrice > 0 && getEffectiveDownPayment() > 0 && (
+                    {property.downPaymentInputType === 'dollars' && property.purchasePrice > 0 && getEffectiveDownPayment() > 0 && (
                       <span className="block mt-1 text-gray-600">
-                        {((getEffectiveDownPayment() / propertyData.purchasePrice) * 100).toFixed(1)}% of purchase price
+                        {((getEffectiveDownPayment() / property.purchasePrice) * 100).toFixed(1)}% of purchase price
                       </span>
                     )}
                   </p>
@@ -322,7 +368,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                   </label>
                   <input
                     type="text"
-                    value={propertyData.interestRate}
+                    value={property.interestRate}
                     onChange={(e) => {
                       const value = parseFloat(e.target.value) || 0
                       handleInputChange('interestRate', value)
@@ -341,7 +387,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                     Loan Term (years)
                   </label>
                   <select
-                    value={propertyData.loanTerm}
+                    value={property.loanTerm}
                     onChange={(e) => handleInputChange('loanTerm', e.target.value)}
                     className="input-field"
                   >
@@ -364,7 +410,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                         type="button"
                         onClick={() => onUpdate({ taxInputType: 'annual' })}
                         className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                          propertyData.taxInputType === 'annual' 
+                          property.taxInputType === 'annual' 
                             ? 'bg-primary-600 text-white' 
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
@@ -375,7 +421,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                         type="button"
                         onClick={() => onUpdate({ taxInputType: 'monthly' })}
                         className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                          propertyData.taxInputType === 'monthly' 
+                          property.taxInputType === 'monthly' 
                             ? 'bg-primary-600 text-white' 
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
@@ -385,23 +431,23 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                     </div>
                   </div>
                   <input
-                    type={propertyData.taxInputType === 'monthly' ? 'number' : 'text'}
-                    value={propertyData.taxInputType === 'monthly' ? (propertyData.annualTaxes / 12) || '' : formatNumber(propertyData.annualTaxes)}
+                    type={property.taxInputType === 'monthly' ? 'number' : 'text'}
+                    value={property.taxInputType === 'monthly' ? (property.annualTaxes / 12) || '' : formatNumber(property.annualTaxes)}
                     onChange={(e) => {
                       const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
-                      const annualValue = propertyData.taxInputType === 'monthly' ? value * 12 : value
+                      const annualValue = property.taxInputType === 'monthly' ? value * 12 : value
                       handleInputChange('annualTaxes', annualValue)
                     }}
                     placeholder="0"
                     min="0"
-                    step={propertyData.taxInputType === 'monthly' ? 100 : 1000}
+                    step={property.taxInputType === 'monthly' ? 100 : 1000}
                     className="input-field"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    {propertyData.taxInputType === 'monthly' ? 'Monthly amount' : 'Annual amount'}
-                    {propertyData.taxInputType === 'monthly' && propertyData.annualTaxes > 0 && (
+                    {property.taxInputType === 'monthly' ? 'Monthly amount' : 'Annual amount'}
+                    {property.taxInputType === 'monthly' && property.annualTaxes > 0 && (
                       <span className="block mt-1 text-gray-600">
-                        Annual total: {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(propertyData.annualTaxes)}
+                        Annual total: {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(property.annualTaxes)}
                       </span>
                     )}
                   </p>
@@ -419,7 +465,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                         type="button"
                         onClick={() => onUpdate({ insuranceInputType: 'annual' })}
                         className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                          propertyData.insuranceInputType === 'annual' 
+                          property.insuranceInputType === 'annual' 
                             ? 'bg-primary-600 text-white' 
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
@@ -430,7 +476,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                         type="button"
                         onClick={() => onUpdate({ insuranceInputType: 'monthly' })}
                         className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                          propertyData.insuranceInputType === 'monthly' 
+                          property.insuranceInputType === 'monthly' 
                             ? 'bg-primary-600 text-white' 
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
@@ -440,23 +486,23 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                     </div>
                   </div>
                   <input
-                    type={propertyData.insuranceInputType === 'monthly' ? 'number' : 'text'}
-                    value={propertyData.insuranceInputType === 'monthly' ? (propertyData.annualInsurance / 12) || '' : formatNumber(propertyData.annualInsurance)}
+                    type={property.insuranceInputType === 'monthly' ? 'number' : 'text'}
+                    value={property.insuranceInputType === 'monthly' ? (property.annualInsurance / 12) || '' : formatNumber(property.annualInsurance)}
                     onChange={(e) => {
                       const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
-                      const annualValue = propertyData.insuranceInputType === 'monthly' ? value * 12 : value
+                      const annualValue = property.insuranceInputType === 'monthly' ? value * 12 : value
                       handleInputChange('annualInsurance', annualValue)
                     }}
                     placeholder="0"
                     min="0"
-                    step={propertyData.insuranceInputType === 'monthly' ? 100 : 1000}
+                    step={property.insuranceInputType === 'monthly' ? 100 : 1000}
                     className="input-field"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    {propertyData.taxInputType === 'monthly' ? 'Monthly amount' : 'Annual amount'}
-                    {propertyData.insuranceInputType === 'monthly' && propertyData.annualInsurance > 0 && (
+                    {property.taxInputType === 'monthly' ? 'Monthly amount' : 'Annual amount'}
+                    {property.insuranceInputType === 'monthly' && property.annualInsurance > 0 && (
                       <span className="block mt-1 text-gray-600">
-                        Annual total: {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(propertyData.annualInsurance)}
+                        Annual total: {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(property.annualInsurance)}
                       </span>
                     )}
                   </p>
@@ -482,7 +528,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                         type="button"
                         onClick={() => onUpdate({ rentalIncomeInputType: 'annual' })}
                         className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                          propertyData.rentalIncomeInputType === 'annual' 
+                          property.rentalIncomeInputType === 'annual' 
                             ? 'bg-primary-600 text-white' 
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
@@ -493,7 +539,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                         type="button"
                         onClick={() => onUpdate({ rentalIncomeInputType: 'monthly' })}
                         className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                          propertyData.rentalIncomeInputType === 'monthly' 
+                          property.rentalIncomeInputType === 'monthly' 
                             ? 'bg-primary-600 text-white' 
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
@@ -503,20 +549,20 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                     </div>
                   </div>
                   <input
-                    type={propertyData.rentalIncomeInputType === 'monthly' ? 'number' : 'text'}
-                    value={propertyData.rentalIncomeInputType === 'monthly' ? (propertyData.grossRentalIncome / 12) || '' : formatNumber(propertyData.grossRentalIncome)}
+                    type={property.rentalIncomeInputType === 'monthly' ? 'number' : 'text'}
+                    value={property.rentalIncomeInputType === 'monthly' ? (property.grossRentalIncome / 12) || '' : formatNumber(property.grossRentalIncome)}
                     onChange={(e) => {
                       const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
-                      const annualValue = propertyData.rentalIncomeInputType === 'monthly' ? value * 12 : value
+                      const annualValue = property.rentalIncomeInputType === 'monthly' ? value * 12 : value
                       handleInputChange('grossRentalIncome', annualValue)
                     }}
                     placeholder="0"
                     min="0"
-                    step={propertyData.rentalIncomeInputType === 'monthly' ? 100 : 1000}
+                    step={property.rentalIncomeInputType === 'monthly' ? 100 : 1000}
                     className="input-field"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    {propertyData.rentalIncomeInputType === 'monthly' ? 'Monthly amount' : 'Annual amount'}
+                    {property.rentalIncomeInputType === 'monthly' ? 'Monthly amount' : 'Annual amount'}
                   </p>
                 </div>
 
@@ -527,7 +573,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                   </label>
                   <input
                     type="number"
-                    value={propertyData.rentalIncomeDiscount || ''}
+                    value={property.rentalIncomeDiscount || ''}
                     onChange={(e) => handleInputChange('rentalIncomeDiscount', e.target.value)}
                     placeholder="25"
                     min="0"
@@ -550,21 +596,21 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                     <label className="flex items-center">
                       <input
                         type="checkbox"
-                        checked={propertyData.includePropertyManagement}
+                        checked={property.includePropertyManagement}
                         onChange={(e) => onUpdate({ includePropertyManagement: e.target.checked })}
                         className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                       />
                       <span className="ml-2 text-sm text-gray-600">Include</span>
                     </label>
                   </div>
-                  {propertyData.includePropertyManagement && (
+                  {property.includePropertyManagement && (
                     <>
                       <div className="flex items-center space-x-2 mb-2">
                         <button
                           type="button"
                           onClick={() => onUpdate({ propertyManagementInputType: 'dollars' })}
                           className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                            propertyData.propertyManagementInputType === 'dollars' 
+                            property.propertyManagementInputType === 'dollars' 
                               ? 'bg-primary-600 text-white' 
                               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                           }`}
@@ -575,7 +621,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                           type="button"
                           onClick={() => onUpdate({ propertyManagementInputType: 'percentage' })}
                           className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                            propertyData.propertyManagementInputType === 'percentage' 
+                            property.propertyManagementInputType === 'percentage' 
                               ? 'bg-primary-600 text-white' 
                               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                           }`}
@@ -584,11 +630,11 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                         </button>
                       </div>
                       <input
-                        type={propertyData.propertyManagementInputType === 'percentage' ? 'number' : 'text'}
-                        value={propertyData.propertyManagementInputType === 'percentage' ? propertyData.propertyManagementFee : formatNumber(propertyData.propertyManagementFee)}
+                        type={property.propertyManagementInputType === 'percentage' ? 'number' : 'text'}
+                        value={property.propertyManagementInputType === 'percentage' ? property.propertyManagementFee : formatNumber(property.propertyManagementFee)}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
-                          if (propertyData.propertyManagementInputType === 'percentage') {
+                          if (property.propertyManagementInputType === 'percentage') {
                             // Store the raw percentage value (e.g., "10" for 10%)
                             // Round to 2 decimal places to avoid floating-point precision issues
                             const roundedValue = Math.round(value * 100) / 100
@@ -599,11 +645,11 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                         }}
                         placeholder="0"
                         min="0"
-                        step={propertyData.propertyManagementInputType === 'percentage' ? 1 : 1000}
+                        step={property.propertyManagementInputType === 'percentage' ? 1 : 1000}
                         className="input-field"
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        {propertyData.propertyManagementInputType === 'percentage' ? 'Percentage of rental income' : 'Annual dollar amount'}
+                        {property.propertyManagementInputType === 'percentage' ? 'Percentage of rental income' : 'Annual dollar amount'}
                       </p>
                     </>
                   )}
@@ -619,21 +665,21 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                     <label className="flex items-center">
                       <input
                         type="checkbox"
-                        checked={propertyData.includeMaintenance}
+                        checked={property.includeMaintenance}
                         onChange={(e) => onUpdate({ includeMaintenance: e.target.checked })}
                         className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                       />
                       <span className="ml-2 text-sm text-gray-600">Include</span>
                     </label>
                   </div>
-                  {propertyData.includeMaintenance && (
+                  {property.includeMaintenance && (
                     <>
                       <div className="flex items-center space-x-2 mb-2">
                         <button
                           type="button"
                           onClick={() => onUpdate({ maintenanceInputType: 'dollars' })}
                           className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                            propertyData.maintenanceInputType === 'dollars' 
+                            property.maintenanceInputType === 'dollars' 
                               ? 'bg-primary-600 text-white' 
                               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                           }`}
@@ -644,7 +690,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                           type="button"
                           onClick={() => onUpdate({ maintenanceInputType: 'percentage' })}
                           className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                            propertyData.maintenanceInputType === 'percentage' 
+                            property.maintenanceInputType === 'percentage' 
                               ? 'bg-primary-600 text-white' 
                               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                           }`}
@@ -653,11 +699,11 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                         </button>
                       </div>
                       <input
-                        type={propertyData.maintenanceInputType === 'percentage' ? 'number' : 'text'}
-                        value={propertyData.maintenanceInputType === 'percentage' ? propertyData.maintenanceReserve : formatNumber(propertyData.maintenanceReserve)}
+                        type={property.maintenanceInputType === 'percentage' ? 'number' : 'text'}
+                        value={property.maintenanceInputType === 'percentage' ? property.maintenanceReserve : formatNumber(property.maintenanceReserve)}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
-                          if (propertyData.maintenanceInputType === 'percentage') {
+                          if (property.maintenanceInputType === 'percentage') {
                             // Store the raw percentage value (e.g., "10" for 10%)
                             // Round to 2 decimal places to avoid floating-point precision issues
                             const roundedValue = Math.round(value * 100) / 100
@@ -668,11 +714,11 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                         }}
                         placeholder="0"
                         min="0"
-                        step={propertyData.maintenanceInputType === 'percentage' ? 1 : 1000}
+                        step={property.maintenanceInputType === 'percentage' ? 1 : 1000}
                         className="input-field"
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        {propertyData.maintenanceInputType === 'percentage' ? 'Percentage of rental income' : 'Annual dollar amount'}
+                        {property.maintenanceInputType === 'percentage' ? 'Percentage of rental income' : 'Annual dollar amount'}
                       </p>
                     </>
                   )}
@@ -688,21 +734,21 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                     <label className="flex items-center">
                       <input
                         type="checkbox"
-                        checked={propertyData.includeHoaFees}
+                        checked={property.includeHoaFees}
                         onChange={(e) => onUpdate({ includeHoaFees: e.target.checked })}
                         className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                       />
                       <span className="ml-2 text-sm text-gray-600">Include</span>
                     </label>
                   </div>
-                  {propertyData.includeHoaFees && (
+                  {property.includeHoaFees && (
                     <>
                       <div className="flex items-center space-x-2 mb-2">
                         <button
                           type="button"
                           onClick={() => onUpdate({ hoaInputType: 'annual' })}
                           className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                            propertyData.hoaInputType === 'annual' 
+                            property.hoaInputType === 'annual' 
                               ? 'bg-primary-600 text-white' 
                               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                           }`}
@@ -713,7 +759,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                           type="button"
                           onClick={() => onUpdate({ hoaInputType: 'monthly' })}
                           className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                            propertyData.hoaInputType === 'monthly' 
+                            property.hoaInputType === 'monthly' 
                               ? 'bg-primary-600 text-white' 
                               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                           }`}
@@ -722,20 +768,20 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                         </button>
                       </div>
                       <input
-                        type={propertyData.hoaInputType === 'monthly' ? 'number' : 'text'}
-                        value={propertyData.hoaInputType === 'monthly' ? (propertyData.hoaFees / 12) || '' : formatNumber(propertyData.hoaFees)}
+                        type={property.hoaInputType === 'monthly' ? 'number' : 'text'}
+                        value={property.hoaInputType === 'monthly' ? (property.hoaFees / 12) || '' : formatNumber(property.hoaFees)}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
-                          const annualValue = propertyData.hoaInputType === 'monthly' ? value * 12 : value
+                          const annualValue = property.hoaInputType === 'monthly' ? value * 12 : value
                           handleInputChange('hoaFees', annualValue)
                         }}
                         placeholder="0"
                         min="0"
-                        step={propertyData.hoaInputType === 'monthly' ? 100 : 1000}
+                        step={property.hoaInputType === 'monthly' ? 100 : 1000}
                         className="input-field"
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        {propertyData.hoaInputType === 'monthly' ? 'Monthly amount' : 'Annual amount'}
+                        {property.hoaInputType === 'monthly' ? 'Monthly amount' : 'Annual amount'}
                       </p>
                     </>
                   )}
@@ -746,7 +792,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
         )}
 
         {/* Home Sale Inputs */}
-        {propertyData.calculatorMode === 'homeSale' && (
+        {isHomeSaleProperty && (
           <>
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <Home className="w-5 h-5 text-primary-600" />
@@ -762,7 +808,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                 </label>
                 <input
                   type="text"
-                  value={formatNumber(propertyData.salePrice)}
+                  value={formatNumber(property.salePrice)}
                   onChange={(e) => {
                     const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
                     handleInputChange('salePrice', value)
@@ -782,7 +828,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                 </label>
                 <input
                   type="text"
-                  value={formatNumber(propertyData.outstandingMortgageBalance)}
+                  value={formatNumber(property.outstandingMortgageBalance)}
                   onChange={(e) => {
                     const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
                     handleInputChange('outstandingMortgageBalance', value)
@@ -802,7 +848,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                 </label>
                 <input
                   type="text"
-                  value={formatNumber(propertyData.originalPurchasePrice)}
+                  value={formatNumber(property.originalPurchasePrice)}
                   onChange={(e) => {
                     const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
                     handleInputChange('originalPurchasePrice', value)
@@ -823,20 +869,20 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    value={propertyData.realtorCommissionInputType === 'percentage' 
-                      ? propertyData.realtorCommission 
-                      : formatNumber(propertyData.realtorCommission)}
+                    value={property.realtorCommissionInputType === 'percentage' 
+                      ? property.realtorCommission 
+                      : formatNumber(property.realtorCommission)}
                     onChange={(e) => {
                       const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
                       handleInputChange('realtorCommission', value)
                     }}
                     placeholder="0"
                     min="0"
-                    step={propertyData.realtorCommissionInputType === 'percentage' ? 0.1 : 1000}
+                    step={property.realtorCommissionInputType === 'percentage' ? 0.1 : 1000}
                     className="input-field flex-1"
                   />
                   <select
-                    value={propertyData.realtorCommissionInputType}
+                    value={property.realtorCommissionInputType}
                     onChange={(e) => onUpdate({ realtorCommissionInputType: e.target.value as 'dollars' | 'percentage' })}
                     className="input-field w-24"
                   >
@@ -854,7 +900,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                 </label>
                 <input
                   type="text"
-                  value={formatNumber(propertyData.closingCosts)}
+                  value={formatNumber(property.closingCosts)}
                   onChange={(e) => {
                     const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
                     handleInputChange('closingCosts', value)
@@ -873,7 +919,7 @@ export default function GlobalInputsPanel({ propertyData, onUpdate, onLoadProper
                 </label>
                 <input
                   type="text"
-                  value={propertyData.capitalGainsTaxRate}
+                  value={property.capitalGainsTaxRate}
                   onChange={(e) => {
                     const value = parseFloat(e.target.value) || 0
                     handleInputChange('capitalGainsTaxRate', value)
