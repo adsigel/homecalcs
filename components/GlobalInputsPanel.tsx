@@ -342,7 +342,7 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                     }}
                     placeholder="0"
                     min="0"
-                    step={property.downPaymentInputType === 'percentage' ? 0.1 : 1000}
+                    step={property.downPaymentInputType === 'percentage' ? 0.01 : 1000}
                     className={`input-field ${property.useHomeSaleProceedsAsDownPayment ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                     disabled={property.useHomeSaleProceedsAsDownPayment}
                   />
@@ -367,7 +367,7 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                     Interest Rate (%)
                   </label>
                   <input
-                    type="text"
+                    type="number"
                     value={property.interestRate}
                     onChange={(e) => {
                       const value = parseFloat(e.target.value) || 0
@@ -376,9 +376,12 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                     placeholder="0"
                     min="0"
                     max="25"
-                    step="0.125"
+                    step="0.001"
                     className="input-field"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter rate with up to 3 decimal places (e.g., 7.125%)
+                  </p>
                 </div>
 
                 {/* Loan Term */}
@@ -549,16 +552,14 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                     </div>
                   </div>
                   <input
-                    type={property.rentalIncomeInputType === 'monthly' ? 'number' : 'text'}
-                    value={property.rentalIncomeInputType === 'monthly' ? (property.grossRentalIncome / 12) || '' : formatNumber(property.grossRentalIncome)}
+                    type="text"
+                    value={property.rentalIncomeInputType === 'monthly' ? formatNumber(property.grossRentalIncome / 12) : formatNumber(property.grossRentalIncome)}
                     onChange={(e) => {
                       const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
                       const annualValue = property.rentalIncomeInputType === 'monthly' ? value * 12 : value
                       handleInputChange('grossRentalIncome', annualValue)
                     }}
                     placeholder="0"
-                    min="0"
-                    step={property.rentalIncomeInputType === 'monthly' ? 100 : 1000}
                     className="input-field"
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -654,7 +655,7 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                     }}
                     placeholder="0"
                     min="0"
-                    step={property.propertyManagementInputType === 'percentage' ? 1 : 1000}
+                    step={property.propertyManagementInputType === 'percentage' ? 0.01 : 1000}
                     className="input-field"
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -719,7 +720,7 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                     }}
                     placeholder="0"
                     min="0"
-                    step={property.maintenanceInputType === 'percentage' ? 1 : 1000}
+                    step={property.maintenanceInputType === 'percentage' ? 0.01 : 1000}
                     className="input-field"
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -867,7 +868,7 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                 </label>
                 <div className="flex gap-2">
                   <input
-                    type="text"
+                    type={property.realtorCommissionInputType === 'percentage' ? 'number' : 'text'}
                     value={property.realtorCommissionInputType === 'percentage' 
                       ? property.realtorCommission 
                       : formatNumber(property.realtorCommission)}
@@ -877,7 +878,7 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                     }}
                     placeholder="0"
                     min="0"
-                    step={property.realtorCommissionInputType === 'percentage' ? 0.1 : 1000}
+                    step={property.realtorCommissionInputType === 'percentage' ? 0.01 : 1000}
                     className="input-field flex-1"
                   />
                   <select
@@ -917,7 +918,7 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                   Capital Gains Tax Rate (%)
                 </label>
                 <input
-                  type="text"
+                  type="number"
                   value={property.capitalGainsTaxRate}
                   onChange={(e) => {
                     const value = parseFloat(e.target.value) || 0
@@ -926,9 +927,12 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                   placeholder="0"
                   min="0"
                   max="100"
-                  step="0.1"
+                  step="0.01"
                   className="input-field"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter rate with up to 2 decimal places (e.g., 15.5%)
+                </p>
               </div>
 
               {/* 1031 Exchange Toggle */}
