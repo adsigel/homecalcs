@@ -39,17 +39,15 @@ export default function PropertyManager({
   // Load properties from localStorage on component mount
   useEffect(() => {
     setIsHydrated(true)
-    const loaded = loadProperties()
-    onPropertiesCollectionChange(loaded)
-  }, [onPropertiesCollectionChange])
+    // Don't call onPropertiesCollectionChange here to avoid loops
+    // The parent component already handles loading properties
+  }, []) // Empty dependency array - only run once on mount
 
   const loadProperty = (propertyId: string) => {
     const property = propertiesCollection.properties.find(p => p.id === propertyId)
     if (property) {
-      const updatedCollection = setActiveProperty(propertiesCollection, propertyId)
-      onPropertiesCollectionChange(updatedCollection)
-      saveProperties(updatedCollection)
-      
+      // Just notify the parent about the property change
+      // Don't modify the collection here to avoid loops
       onPropertyChange(property)
     }
   }
@@ -57,23 +55,8 @@ export default function PropertyManager({
   const deletePropertyById = (propertyId: string) => {
     if (confirm('Are you sure you want to delete this property?')) {
       const updatedCollection = deleteProperty(propertiesCollection, propertyId)
+      // Let the parent handle the collection update
       onPropertiesCollectionChange(updatedCollection)
-      saveProperties(updatedCollection)
-      
-      // If we deleted the active property, load the new active one
-      if (updatedCollection.activePropertyId) {
-        const newActive = getActiveProperty(updatedCollection)
-        if (newActive) {
-          onPropertyChange(newActive)
-        }
-      } else {
-        // No properties left, create a default one
-        const defaultProperty = createInvestmentProperty('New Property', '')
-        const newCollection = addProperty(updatedCollection, defaultProperty)
-        onPropertiesCollectionChange(newCollection)
-        saveProperties(newCollection)
-        onPropertyChange(defaultProperty)
-      }
     }
   }
 

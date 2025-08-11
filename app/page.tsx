@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import GlobalInputsPanel from '@/components/GlobalInputsPanel'
 import PITICalculator from '@/components/PITICalculator'
 import DSCRCalculator from '@/components/DSCRCalculator'
@@ -57,9 +57,40 @@ export default function Home() {
     }
   }, [propertiesCollection, isHydrated])
 
+  // Handle property deletion and active property updates
+  useEffect(() => {
+    if (!isHydrated) return
+    
+    // If the active property was deleted, find a new active property
+    if (activeProperty && !propertiesCollection.properties.find(p => p.id === activeProperty.id)) {
+      if (propertiesCollection.properties.length > 0) {
+        // Set the first available property as active
+        const newActive = propertiesCollection.properties[0]
+        setActiveProperty(newActive)
+        setCalculatorMode(newActive.calculatorMode)
+      } else {
+        // No properties left, create a default one
+        const defaultProperty = createInvestmentProperty('New Property', '')
+        const newCollection = { properties: [defaultProperty], activePropertyId: defaultProperty.id }
+        setPropertiesCollection(newCollection)
+        saveProperties(newCollection)
+        setActiveProperty(defaultProperty)
+        setCalculatorMode(defaultProperty.calculatorMode)
+      }
+    }
+  }, [propertiesCollection, activeProperty, isHydrated])
+
   const handlePropertyChange = (property: Property) => {
     setActiveProperty(property)
     setCalculatorMode(property.calculatorMode)
+    
+    // Update the active property ID in the collection
+    const updatedCollection = {
+      ...propertiesCollection,
+      activePropertyId: property.id
+    }
+    setPropertiesCollection(updatedCollection)
+    saveProperties(updatedCollection)
   }
 
   const handlePropertyUpdate = (updates: Partial<Property>) => {
@@ -102,9 +133,9 @@ export default function Home() {
     setShowSaveDialog(true)
   }
 
-  const handlePropertiesCollectionChange = (collection: PropertiesCollection) => {
+  const handlePropertiesCollectionChange = useCallback((collection: PropertiesCollection) => {
     setPropertiesCollection(collection)
-  }
+  }, [])
 
   const createNewProperty = () => {
     if (!propertyName.trim() || !streetAddress.trim()) return
