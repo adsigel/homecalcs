@@ -186,7 +186,7 @@ export default function DSCRCalculator({ property, onUpdate, pitiCalculation }: 
               </span>
             </div>
 
-            {property.includePropertyManagement && (
+            {dscrCalculation.breakdown.propertyManagement > 0 && (
               <div className="flex justify-between py-2 border-b border-gray-200">
                 <span className="text-gray-600">Property Management:</span>
                 <span className="font-medium">
@@ -198,7 +198,7 @@ export default function DSCRCalculator({ property, onUpdate, pitiCalculation }: 
               </div>
             )}
 
-            {property.includeMaintenance && (
+            {dscrCalculation.breakdown.maintenance > 0 && (
               <div className="flex justify-between py-2 border-b border-gray-200">
                 <span className="text-gray-600">Maintenance Reserves:</span>
                 <span className="font-medium">
@@ -210,7 +210,7 @@ export default function DSCRCalculator({ property, onUpdate, pitiCalculation }: 
               </div>
             )}
 
-            {property.includeHoaFees && (
+            {dscrCalculation.breakdown.hoaFees > 0 && (
               <div className="flex justify-between py-2 border-b border-gray-200">
                 <span className="text-gray-600">HOA Fees:</span>
                 <span className="font-medium">

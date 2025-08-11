@@ -182,9 +182,9 @@ export function calculateDSCR(data: PropertyData | InvestmentProperty, pitiCalcu
   // Apply rental income discount
   const discountedRentalIncome = annualRentalIncome * (1 - data.rentalIncomeDiscount / 100)
   
-  // Calculate property management fees
+  // Calculate property management fees (always calculate for breakdown)
   let annualPropertyManagement = 0
-  if (data.includePropertyManagement && data.propertyManagementFee > 0) {
+  if (data.propertyManagementFee > 0) {
     if (data.propertyManagementInputType === 'percentage') {
       // data.propertyManagementFee now stores the raw percentage (e.g., 10 for 10%)
       annualPropertyManagement = annualRentalIncome * (data.propertyManagementFee / 100)
@@ -194,10 +194,9 @@ export function calculateDSCR(data: PropertyData | InvestmentProperty, pitiCalcu
     }
   }
   
-  // Calculate maintenance reserves
+  // Calculate maintenance reserves (always calculate for breakdown)
   let annualMaintenance = 0
-  if (data.includeMaintenance && data.maintenanceReserve > 0) {
-    
+  if (data.maintenanceReserve > 0) {
     if (data.maintenanceInputType === 'percentage') {
       // data.maintenanceReserve now stores the raw percentage (e.g., 10 for 10%)
       annualMaintenance = annualRentalIncome * (data.maintenanceReserve / 100)
@@ -207,19 +206,31 @@ export function calculateDSCR(data: PropertyData | InvestmentProperty, pitiCalcu
     }
   }
   
-  // Calculate HOA fees
+  // Calculate HOA fees (always calculate for breakdown)
   let annualHoaFees = 0
-  if (data.includeHoaFees && data.hoaFees > 0) {
+  if (data.hoaFees > 0) {
     annualHoaFees = data.hoaFees
     if (data.hoaInputType === 'monthly') {
       annualHoaFees *= 12
     }
   }
   
-  // Total annual expenses
-  const totalExpenses = annualPITI + annualPropertyManagement + annualMaintenance + annualHoaFees
+  // Calculate expenses for DSCR (only include if checkboxes are checked)
+  let dscrExpenses = annualPITI
+  if (data.includePropertyManagement) {
+    dscrExpenses += annualPropertyManagement
+  }
+  if (data.includeMaintenance) {
+    dscrExpenses += annualMaintenance
+  }
+  if (data.includeHoaFees) {
+    dscrExpenses += annualHoaFees
+  }
   
-  // Net Operating Income
+  // Total annual expenses for DSCR calculation
+  const totalExpenses = dscrExpenses
+  
+  // Net Operating Income (for DSCR, only include expenses that are checked)
   const netOperatingIncome = discountedRentalIncome - totalExpenses
   
   // DSCR Ratio

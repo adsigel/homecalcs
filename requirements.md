@@ -33,6 +33,7 @@ HomeCalcs is a collection of financial calculator tools designed for homeowners 
 - Calculate cash flow projections
 - **Cap Rate Analysis**: Calculate capitalization rate (Net Operating Income / Property Value) to evaluate investment returns relative to property value
 - **Enhanced**: Integrates with PITI calculations for accurate debt service calculations
+- **Enhanced**: Full expense transparency - all expenses are always shown in breakdown when values exist, regardless of DSCR inclusion settings
 
 ### 3. Home Sale Calculator ✅
 **Status: Implemented and Enhanced**
@@ -153,6 +154,8 @@ Common inputs that may be reused across calculators:
 - **Calculator Inputs**: Dedicated right column for all calculator inputs
 - **Modal System**: Fixed modal display issues by moving all modals to page level
 - **Responsive Design**: Improved mobile and desktop experience
+- **Property Renaming**: Added ability to rename existing properties in the property manager
+- **Expense Breakdown Transparency**: All expense input fields are always visible and editable, with clear separation between display (always show) and DSCR calculation inclusion (checkbox controlled)
 
 ## Future Calculator Ideas
 - Refinance calculator

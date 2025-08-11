@@ -568,14 +568,17 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
 
                 {/* Rental Income Discount */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Vacancy & Maintenance Discount (%)
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Rental Income Discount (%)
                   </label>
                   <input
                     type="number"
-                    value={property.rentalIncomeDiscount || ''}
-                    onChange={(e) => handleInputChange('rentalIncomeDiscount', e.target.value)}
-                    placeholder="25"
+                    value={property.rentalIncomeDiscount}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value) || 0
+                      handleInputChange('rentalIncomeDiscount', value)
+                    }}
+                    placeholder="0"
                     min="0"
                     max="50"
                     step="1"
@@ -583,6 +586,14 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Standard discount for vacancy, maintenance, and unexpected expenses
+                  </p>
+                </div>
+
+                {/* Expense Management Note */}
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>Note:</strong> All expenses below are always shown in the expense breakdown when values are entered. 
+                    The checkboxes control whether they are included in DSCR (Debt Service Coverage Ratio) calculations.
                   </p>
                 </div>
 
@@ -600,59 +611,55 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                         onChange={(e) => onUpdate({ includePropertyManagement: e.target.checked })}
                         className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                       />
-                      <span className="ml-2 text-sm text-gray-600">Include</span>
+                      <span className="ml-2 text-sm text-gray-600">Include in DSCR</span>
                     </label>
                   </div>
-                  {property.includePropertyManagement && (
-                    <>
-                      <div className="flex items-center space-x-2 mb-2">
-                        <button
-                          type="button"
-                          onClick={() => onUpdate({ propertyManagementInputType: 'dollars' })}
-                          className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                            property.propertyManagementInputType === 'dollars' 
-                              ? 'bg-primary-600 text-white' 
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                          }`}
-                        >
-                          Dollars
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onUpdate({ propertyManagementInputType: 'percentage' })}
-                          className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                            property.propertyManagementInputType === 'percentage' 
-                              ? 'bg-primary-600 text-white' 
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                          }`}
-                        >
-                          Percentage
-                        </button>
-                      </div>
-                      <input
-                        type={property.propertyManagementInputType === 'percentage' ? 'number' : 'text'}
-                        value={property.propertyManagementInputType === 'percentage' ? property.propertyManagementFee : formatNumber(property.propertyManagementFee)}
-                        onChange={(e) => {
-                          const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
-                          if (property.propertyManagementInputType === 'percentage') {
-                            // Store the raw percentage value (e.g., "10" for 10%)
-                            // Round to 2 decimal places to avoid floating-point precision issues
-                            const roundedValue = Math.round(value * 100) / 100
-                            handleInputChange('propertyManagementFee', roundedValue)
-                          } else {
-                            handleInputChange('propertyManagementFee', value)
-                          }
-                        }}
-                        placeholder="0"
-                        min="0"
-                        step={property.propertyManagementInputType === 'percentage' ? 1 : 1000}
-                        className="input-field"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        {property.propertyManagementInputType === 'percentage' ? 'Percentage of rental income' : 'Annual dollar amount'}
-                      </p>
-                    </>
-                  )}
+                  <div className="flex items-center space-x-2 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => onUpdate({ propertyManagementInputType: 'dollars' })}
+                      className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                        property.propertyManagementInputType === 'dollars' 
+                          ? 'bg-primary-600 text-white' 
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Dollars
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onUpdate({ propertyManagementInputType: 'percentage' })}
+                      className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                        property.propertyManagementInputType === 'percentage' 
+                          ? 'bg-primary-600 text-white' 
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Percentage
+                    </button>
+                  </div>
+                  <input
+                    type={property.propertyManagementInputType === 'percentage' ? 'number' : 'text'}
+                    value={property.propertyManagementInputType === 'percentage' ? property.propertyManagementFee : formatNumber(property.propertyManagementFee)}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
+                      if (property.propertyManagementInputType === 'percentage') {
+                        // Store the raw percentage value (e.g., "10" for 10%)
+                        // Round to 2 decimal places to avoid floating-point precision issues
+                        const roundedValue = Math.round(value * 100) / 100
+                        handleInputChange('propertyManagementFee', roundedValue)
+                      } else {
+                        handleInputChange('propertyManagementFee', value)
+                      }
+                    }}
+                    placeholder="0"
+                    min="0"
+                    step={property.propertyManagementInputType === 'percentage' ? 1 : 1000}
+                    className="input-field"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {property.propertyManagementInputType === 'percentage' ? 'Percentage of rental income' : 'Annual dollar amount'}
+                  </p>
                 </div>
 
                 {/* Maintenance Reserves */}
@@ -669,59 +676,55 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                         onChange={(e) => onUpdate({ includeMaintenance: e.target.checked })}
                         className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                       />
-                      <span className="ml-2 text-sm text-gray-600">Include</span>
+                      <span className="ml-2 text-sm text-gray-600">Include in DSCR</span>
                     </label>
                   </div>
-                  {property.includeMaintenance && (
-                    <>
-                      <div className="flex items-center space-x-2 mb-2">
-                        <button
-                          type="button"
-                          onClick={() => onUpdate({ maintenanceInputType: 'dollars' })}
-                          className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                            property.maintenanceInputType === 'dollars' 
-                              ? 'bg-primary-600 text-white' 
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                          }`}
-                        >
-                          Dollars
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onUpdate({ maintenanceInputType: 'percentage' })}
-                          className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                            property.maintenanceInputType === 'percentage' 
-                              ? 'bg-primary-600 text-white' 
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                          }`}
-                        >
-                          Percentage
-                        </button>
-                      </div>
-                      <input
-                        type={property.maintenanceInputType === 'percentage' ? 'number' : 'text'}
-                        value={property.maintenanceInputType === 'percentage' ? property.maintenanceReserve : formatNumber(property.maintenanceReserve)}
-                        onChange={(e) => {
-                          const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
-                          if (property.maintenanceInputType === 'percentage') {
-                            // Store the raw percentage value (e.g., "10" for 10%)
-                            // Round to 2 decimal places to avoid floating-point precision issues
-                            const roundedValue = Math.round(value * 100) / 100
-                            handleInputChange('maintenanceReserve', roundedValue)
-                          } else {
-                            handleInputChange('maintenanceReserve', value)
-                          }
-                        }}
-                        placeholder="0"
-                        min="0"
-                        step={property.maintenanceInputType === 'percentage' ? 1 : 1000}
-                        className="input-field"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        {property.maintenanceInputType === 'percentage' ? 'Percentage of rental income' : 'Annual dollar amount'}
-                      </p>
-                    </>
-                  )}
+                  <div className="flex items-center space-x-2 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => onUpdate({ maintenanceInputType: 'dollars' })}
+                      className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                        property.maintenanceInputType === 'dollars' 
+                          ? 'bg-primary-600 text-white' 
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Dollars
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onUpdate({ maintenanceInputType: 'percentage' })}
+                      className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                        property.maintenanceInputType === 'percentage' 
+                          ? 'bg-primary-600 text-white' 
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Percentage
+                    </button>
+                  </div>
+                  <input
+                    type={property.maintenanceInputType === 'percentage' ? 'number' : 'text'}
+                    value={property.maintenanceInputType === 'percentage' ? property.maintenanceReserve : formatNumber(property.maintenanceReserve)}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
+                      if (property.maintenanceInputType === 'percentage') {
+                        // Store the raw percentage value (e.g., "10" for 10%)
+                        // Round to 2 decimal places to avoid floating-point precision issues
+                        const roundedValue = Math.round(value * 100) / 100
+                        handleInputChange('maintenanceReserve', roundedValue)
+                      } else {
+                        handleInputChange('maintenanceReserve', value)
+                      }
+                    }}
+                    placeholder="0"
+                    min="0"
+                    step={property.maintenanceInputType === 'percentage' ? 1 : 1000}
+                    className="input-field"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {property.maintenanceInputType === 'percentage' ? 'Percentage of rental income' : 'Annual dollar amount'}
+                  </p>
                 </div>
 
                 {/* HOA Fees */}
@@ -738,53 +741,49 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                         onChange={(e) => onUpdate({ includeHoaFees: e.target.checked })}
                         className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                       />
-                      <span className="ml-2 text-sm text-gray-600">Include</span>
+                      <span className="ml-2 text-sm text-gray-600">Include in DSCR</span>
                     </label>
                   </div>
-                  {property.includeHoaFees && (
-                    <>
-                      <div className="flex items-center space-x-2 mb-2">
-                        <button
-                          type="button"
-                          onClick={() => onUpdate({ hoaInputType: 'annual' })}
-                          className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                            property.hoaInputType === 'annual' 
-                              ? 'bg-primary-600 text-white' 
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                          }`}
-                        >
-                          Annual
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onUpdate({ hoaInputType: 'monthly' })}
-                          className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                            property.hoaInputType === 'monthly' 
-                              ? 'bg-primary-600 text-white' 
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                          }`}
-                        >
-                          Monthly
-                        </button>
-                      </div>
-                      <input
-                        type={property.hoaInputType === 'monthly' ? 'number' : 'text'}
-                        value={property.hoaInputType === 'monthly' ? (property.hoaFees / 12) || '' : formatNumber(property.hoaFees)}
-                        onChange={(e) => {
-                          const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
-                          const annualValue = property.hoaInputType === 'monthly' ? value * 12 : value
-                          handleInputChange('hoaFees', annualValue)
-                        }}
-                        placeholder="0"
-                        min="0"
-                        step={property.hoaInputType === 'monthly' ? 100 : 1000}
-                        className="input-field"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        {property.hoaInputType === 'monthly' ? 'Monthly amount' : 'Annual amount'}
-                      </p>
-                    </>
-                  )}
+                  <div className="flex items-center space-x-2 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => onUpdate({ hoaInputType: 'annual' })}
+                      className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                        property.hoaInputType === 'annual' 
+                          ? 'bg-primary-600 text-white' 
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Annual
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onUpdate({ hoaInputType: 'monthly' })}
+                      className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                        property.hoaInputType === 'monthly' 
+                          ? 'bg-primary-600 text-white' 
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Monthly
+                    </button>
+                  </div>
+                  <input
+                    type={property.hoaInputType === 'monthly' ? 'number' : 'text'}
+                    value={property.hoaInputType === 'monthly' ? (property.hoaFees / 12) || '' : formatNumber(property.hoaFees)}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
+                      const annualValue = property.hoaInputType === 'monthly' ? value * 12 : value
+                      handleInputChange('hoaFees', annualValue)
+                    }}
+                    placeholder="0"
+                    min="0"
+                    step={property.hoaInputType === 'monthly' ? 100 : 1000}
+                    className="input-field"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {property.hoaInputType === 'monthly' ? 'Monthly amount' : 'Annual amount'}
+                  </p>
                 </div>
               </div>
             </div>
