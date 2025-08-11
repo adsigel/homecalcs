@@ -23,6 +23,8 @@ export default function Home() {
   const [showNewPropertyDialog, setShowNewPropertyDialog] = useState(false)
   const [showManageModal, setShowManageModal] = useState(false)
   const [showSaveDialog, setShowSaveDialog] = useState(false)
+  const [showRenameModal, setShowRenameModal] = useState(false)
+  const [propertyToRename, setPropertyToRename] = useState<Property | null>(null)
   const [propertyName, setPropertyName] = useState('')
   const [streetAddress, setStreetAddress] = useState('')
   const [propertyType, setPropertyType] = useState<'homeSale' | 'investment'>('investment')
@@ -113,24 +115,50 @@ export default function Home() {
   const handleShowNewPropertyDialog = () => setShowNewPropertyDialog(true)
   const handleShowManageModal = () => setShowManageModal(true)
   const handleShowSaveDialog = () => {
-    if (!activeProperty) return
+    if (activeProperty && activeProperty.name && activeProperty.streetAddress) {
+      // Property already has a name and address, just save it directly
+      saveCurrentProperty()
+    } else {
+      // Property needs a name, show the dialog
+      setShowSaveDialog(true)
+    }
+  }
+
+  const handleShowRenameModal = (property: Property) => {
+    setPropertyToRename(property)
+    setPropertyName(property.name || '')
+    setStreetAddress(property.streetAddress || '')
+    setShowRenameModal(true)
+  }
+
+  const handleRenameProperty = () => {
+    if (!propertyToRename || !propertyName.trim() || !streetAddress.trim()) return
     
-    // If property already has a name and address, save it directly
-    if (activeProperty.name && activeProperty.streetAddress) {
-      const updatedCollection = {
-        ...propertiesCollection,
-        properties: propertiesCollection.properties.map(p => 
-          p.id === activeProperty.id ? activeProperty : p
-        )
-      }
-      
-      setPropertiesCollection(updatedCollection)
-      saveProperties(updatedCollection)
-      return
+    const updatedProperty = {
+      ...propertyToRename,
+      name: propertyName.trim(),
+      streetAddress: streetAddress.trim()
     }
     
-    // Otherwise, show the dialog to get a name
-    setShowSaveDialog(true)
+    // Update the property in the collection
+    const updatedCollection = {
+      ...propertiesCollection,
+      properties: propertiesCollection.properties.map(p => 
+        p.id === propertyToRename.id ? updatedProperty : p
+      )
+    }
+    
+    // If this is the active property, update it too
+    if (activeProperty?.id === propertyToRename.id) {
+      setActiveProperty(updatedProperty)
+    }
+    
+    setPropertiesCollection(updatedCollection)
+    saveProperties(updatedCollection)
+    setShowRenameModal(false)
+    setPropertyToRename(null)
+    setPropertyName('')
+    setStreetAddress('')
   }
 
   const handlePropertiesCollectionChange = useCallback((collection: PropertiesCollection) => {
@@ -454,6 +482,13 @@ export default function Home() {
                           Load
                         </button>
                         <button
+                          onClick={() => handleShowRenameModal(property)}
+                          className="btn-secondary text-sm px-3 py-1"
+                          title="Rename this property"
+                        >
+                          Rename
+                        </button>
+                        <button
                           onClick={() => {
                             if (confirm('Are you sure you want to delete this property?')) {
                               const updatedCollection = {
@@ -531,6 +566,67 @@ export default function Home() {
                 </button>
                 <button
                   onClick={() => setShowSaveDialog(false)}
+                  className="btn-secondary flex-1"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rename Property Modal */}
+      {showRenameModal && propertyToRename && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Rename Property</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Property Name
+                </label>
+                <input
+                  type="text"
+                  value={propertyName}
+                  onChange={(e) => setPropertyName(e.target.value)}
+                  placeholder="Enter property name"
+                  className="input-field w-full"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Street Address
+                </label>
+                <input
+                  type="text"
+                  value={streetAddress}
+                  onChange={(e) => setStreetAddress(e.target.value)}
+                  placeholder="Enter street address"
+                  className="input-field w-full"
+                />
+              </div>
+              <div className="text-sm text-gray-600">
+                <p>Type: {propertyToRename.calculatorMode === 'homeSale' ? 'Home Sale' : 'Investment'}</p>
+                <p>Current Name: {propertyToRename.name || 'Unnamed'}</p>
+                <p>Current Address: {propertyToRename.streetAddress || 'Not specified'}</p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleRenameProperty}
+                  disabled={!propertyName.trim() || !streetAddress.trim()}
+                  className="btn-primary flex-1"
+                >
+                  Update
+                </button>
+                <button
+                  onClick={() => {
+                    setShowRenameModal(false)
+                    setPropertyToRename(null)
+                    setPropertyName('')
+                    setStreetAddress('')
+                  }}
                   className="btn-secondary flex-1"
                 >
                   Cancel

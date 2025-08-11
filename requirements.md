@@ -35,7 +35,7 @@ HomeCalcs is a collection of financial calculator tools designed for homeowners 
 - **Enhanced**: Integrates with PITI calculations for accurate debt service calculations
 
 ### 3. Home Sale Calculator ✅
-**Status: Implemented**
+**Status: Implemented and Enhanced**
 
 **Purpose**: Calculate net proceeds from home sales and analyze tax implications
 
@@ -47,17 +47,21 @@ HomeCalcs is a collection of financial calculator tools designed for homeowners 
 - Original Purchase Price (USD)
 - Capital Improvements (USD)
 - Tax Filing Status (Single, Married, etc.)
+- **Enhanced**: 1031 Exchange toggle and replacement property selection
 
 #### Calculations
 - Net Sale Proceeds = Sale Price - Outstanding Debt - Commission - Closing Costs
 - Capital Gains = Sale Price - Original Purchase Price - Capital Improvements
 - Tax Liability (Traditional Sale vs. 1031 Exchange)
-- 1031 Exchange Benefits and Requirements
+- **Enhanced**: 1031 Exchange calculations with boot detection
+- **Enhanced**: Qualified Intermediary (QI) fees ($1,500 flat fee)
+- **Enhanced**: Boot calculation when replacement property < sale price
 
 #### Outputs
 - Net proceeds breakdown
 - Tax implications comparison
-- 1031 exchange eligibility and benefits
+- **Enhanced**: 1031 exchange details and tax deferral amounts
+- **Enhanced**: Boot warning and tax implications
 - Investment property down payment potential
 
 ### 4. Cap Rate Calculator ✅
@@ -181,6 +185,7 @@ All requirements implemented as detailed above.
 - **Home Sale Proceeds Integration**: Use proceeds from home sale calculations as down payment input for new property purchases
 - **Cross-Calculator Data Flow**: Seamlessly transfer calculated values between calculators (e.g., PITI from one calculator becomes input for DSCR analysis)
 - **Historical Data Tracking**: Store and track changes in property values, mortgage rates, and other inputs over time
+- **1031 Exchange Integration**: Seamlessly integrate home sale proceeds with investment property down payments, including boot calculations and tax deferral analysis
 
 ### 5. External Data Integration
 - **Property Data Import**: Pull home details (price, taxes, property type, year built, etc.) from Redfin or Zillow property links to automatically populate input fields
