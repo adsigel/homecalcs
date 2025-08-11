@@ -44,7 +44,7 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
     if (!selectedHomeSaleProperty) return 0
     
     // Calculate proceeds from the selected property
-    const calculation = calculateNetProceeds(selectedHomeSaleProperty)
+    const calculation = calculateNetProceeds(selectedHomeSaleProperty, propertiesCollection)
     return calculation.netProceeds
   }
 
@@ -163,7 +163,7 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                         {getAvailableHomeSaleProperties().map((homeSaleProperty) => (
                           <option key={homeSaleProperty.id} value={homeSaleProperty.id}>
                             {homeSaleProperty.name || homeSaleProperty.streetAddress || 'Unnamed Property'} - 
-                            ${calculateNetProceeds(homeSaleProperty).netProceeds.toLocaleString()} net proceeds
+                            ${calculateNetProceeds(homeSaleProperty, propertiesCollection).netProceeds.toLocaleString()} net proceeds
                           </option>
                         ))}
                       </select>
@@ -931,6 +931,48 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                   className="input-field"
                 />
               </div>
+
+              {/* 1031 Exchange Toggle */}
+              <div>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={property.use1031Exchange}
+                    onChange={(e) => handleToggle('use1031Exchange', e.target.checked)}
+                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Use 1031 Exchange</span>
+                </label>
+                <p className="text-xs text-gray-500 mt-1">
+                  Defer capital gains tax by exchanging for investment property
+                </p>
+              </div>
+
+              {/* Replacement Property Selection */}
+              {property.use1031Exchange && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Replacement Property
+                  </label>
+                  <select
+                    value={property.selectedReplacementPropertyId || ''}
+                    onChange={(e) => onUpdate({ selectedReplacementPropertyId: e.target.value || undefined })}
+                    className="input-field"
+                  >
+                    <option value="">Select replacement property</option>
+                    {propertiesCollection?.properties
+                      .filter(p => p.calculatorMode === 'investment')
+                      .map(prop => (
+                        <option key={prop.id} value={prop.id}>
+                          {prop.name} - ${prop.purchasePrice.toLocaleString()}
+                        </option>
+                      ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select the investment property you plan to purchase
+                  </p>
+                </div>
+              )}
             </div>
           </>
         )}

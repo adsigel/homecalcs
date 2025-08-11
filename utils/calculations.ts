@@ -317,11 +317,15 @@ export function calculateCapRate(propertyData: PropertyData | InvestmentProperty
   return noi / propertyValue
 } 
 
-export function calculateNetProceeds(propertyData: PropertyData | HomeSaleProperty): {
+export function calculateNetProceeds(propertyData: PropertyData | HomeSaleProperty, propertiesCollection?: PropertiesCollection): {
   netProceeds: number
   capitalGainsTax: number
   totalExpenses: number
   mortgagePayoff: number
+  qiFees: number
+  boot: number
+  bootTax: number
+  use1031Exchange: boolean
 } {
   // Handle both PropertyData and HomeSaleProperty interfaces
   const salePrice = 'salePrice' in propertyData ? propertyData.salePrice : 0
@@ -331,19 +335,51 @@ export function calculateNetProceeds(propertyData: PropertyData | HomeSaleProper
   const closingCosts = 'closingCosts' in propertyData ? propertyData.closingCosts : 0
   const capitalGainsTaxRate = 'capitalGainsTaxRate' in propertyData ? propertyData.capitalGainsTaxRate : 15
   const originalPurchasePrice = 'originalPurchasePrice' in propertyData ? propertyData.originalPurchasePrice : 0
+  
+  // 1031 Exchange fields
+  const use1031Exchange = 'use1031Exchange' in propertyData ? propertyData.use1031Exchange : false
+  const selectedReplacementPropertyId = 'selectedReplacementPropertyId' in propertyData ? propertyData.selectedReplacementPropertyId : undefined
 
   // Calculate realtor commission
   const realtorFee = realtorCommissionInputType === 'percentage' 
     ? (salePrice * realtorCommission) / 100
     : realtorCommission
 
+  // Calculate QI fees for 1031 exchange
+  const qiFees = use1031Exchange ? 1500 : 0
+
   // Calculate total expenses
-  const totalExpenses = realtorFee + closingCosts
+  const totalExpenses = realtorFee + closingCosts + qiFees
 
   // Calculate capital gains
   const adjustedBasis = originalPurchasePrice
   const capitalGain = salePrice - adjustedBasis
-  const capitalGainsTax = Math.max(0, capitalGain * (capitalGainsTaxRate / 100))
+  
+  let capitalGainsTax = 0
+  let boot = 0
+  let bootTax = 0
+
+  if (use1031Exchange && propertiesCollection && selectedReplacementPropertyId) {
+    // Find the replacement property
+    const replacementProperty = propertiesCollection.properties.find(
+      p => p.id === selectedReplacementPropertyId && p.calculatorMode === 'investment'
+    ) as InvestmentProperty | undefined
+
+    if (replacementProperty) {
+      // Calculate boot (difference between sale price and replacement property purchase price)
+      boot = Math.max(0, salePrice - replacementProperty.purchasePrice)
+      
+      // Only tax the boot amount in 1031 exchange
+      bootTax = boot * (capitalGainsTaxRate / 100)
+      capitalGainsTax = bootTax
+    } else {
+      // Fallback to traditional calculation if replacement property not found
+      capitalGainsTax = Math.max(0, capitalGain * (capitalGainsTaxRate / 100))
+    }
+  } else {
+    // Traditional sale - tax the full capital gain
+    capitalGainsTax = Math.max(0, capitalGain * (capitalGainsTaxRate / 100))
+  }
 
   // Calculate net proceeds
   const netProceeds = salePrice - outstandingMortgageBalance - totalExpenses - capitalGainsTax
@@ -352,7 +388,11 @@ export function calculateNetProceeds(propertyData: PropertyData | HomeSaleProper
     netProceeds: Math.max(0, netProceeds),
     capitalGainsTax,
     totalExpenses,
-    mortgagePayoff: outstandingMortgageBalance
+    mortgagePayoff: outstandingMortgageBalance,
+    qiFees,
+    boot,
+    bootTax,
+    use1031Exchange
   }
 } 
 
@@ -369,7 +409,7 @@ export function calculatePITIWithHomeSaleProceeds(
     ) as HomeSaleProperty | undefined
     
     if (selectedHomeSaleProperty) {
-      const calculation = calculateNetProceeds(selectedHomeSaleProperty)
+      const calculation = calculateNetProceeds(selectedHomeSaleProperty, propertiesCollection)
       effectiveDownPayment = calculation.netProceeds
     }
   }
@@ -379,7 +419,7 @@ export function calculatePITIWithHomeSaleProceeds(
     ...property,
     downPayment: effectiveDownPayment
   }
-  
+
   // Call the original calculatePITI function with the adjusted property
   return calculatePITI(adjustedProperty)
 } 

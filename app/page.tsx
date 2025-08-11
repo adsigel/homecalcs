@@ -301,6 +301,7 @@ export default function Home() {
                 {activeProperty.calculatorMode === 'homeSale' && (
                   <HomeSaleCalculator 
                     property={activeProperty as HomeSaleProperty} 
+                    propertiesCollection={propertiesCollection}
                   />
                 )}
               </div>

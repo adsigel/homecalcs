@@ -15,6 +15,8 @@ export function createHomeSaleProperty(name: string, streetAddress: string): Hom
     closingCosts: 0,
     capitalGainsTaxRate: 15,
     originalPurchasePrice: 0,
+    use1031Exchange: false,
+    selectedReplacementPropertyId: undefined,
     calculatorMode: 'homeSale'
   }
 }

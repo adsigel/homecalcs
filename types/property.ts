@@ -10,6 +10,9 @@ export interface HomeSaleProperty {
   closingCosts: number
   capitalGainsTaxRate: number
   originalPurchasePrice: number
+  // 1031 Exchange fields
+  use1031Exchange: boolean
+  selectedReplacementPropertyId?: string // ID of the replacement investment property
   calculatorMode: 'homeSale'
 }
 
