@@ -204,7 +204,6 @@ Common inputs that may be reused across calculators:
 ### 1. UI/UX Improvements 🔄
 **Status: Partially Implemented - Mobile optimization pending**
 
-- **Fix Independent Vertical Scrolling**: Implement proper independent scrolling containers for left (inputs) and right (outputs) panels to improve user experience when dealing with many input fields or extensive calculation results
 - **Optimize Mobile View**: Enhance responsive design for mobile devices, including better touch interactions, optimized layouts for small screens, and mobile-specific navigation patterns
 
 ### 2. Multi-Property Management ✅
@@ -246,6 +245,12 @@ All requirements implemented as detailed above.
 - **Refinance Scenarios**: Model potential refinancing opportunities and their impact on cash flow and overall returns
 - **Exit Strategy Modeling**: Project net proceeds from selling the property at different time horizons, including tax implications and potential 1031 exchange benefits
 - **Cap Rate Evolution**: Track how cap rates change over time as rental income grows and property values appreciate, helping investors understand when to consider selling or refinancing
+
+### 7. Storage Improvements ☁️
+**Status: Future consideration**
+
+- **Transition from local storage to cloud storage**: Allow users to visit the app across multiple devices and persist their information
+- **Migration considerations**: No need to worry about migrating data from local storage to the cloud because there's only one user and I'm fine to reenter data manually at this point
 
 ## Project Status Summary
 
