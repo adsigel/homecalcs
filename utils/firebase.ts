@@ -42,10 +42,18 @@ if (process.env.NODE_ENV === 'development') {
 // Google Sign-In
 export const signInWithGoogle = async () => {
   try {
+    console.log('🔄 Firebase: Starting Google sign-in...')
+    console.log('🔄 Firebase: Using auth domain:', firebaseConfig.authDomain)
+    console.log('🔄 Firebase: Using project ID:', firebaseConfig.projectId)
+    
     const result = await signInWithPopup(auth, googleProvider)
+    console.log('✅ Firebase: Google sign-in successful')
     return result.user
-  } catch (error) {
-    console.error('Error signing in with Google:', error)
+  } catch (error: any) {
+    console.error('❌ Firebase: Error signing in with Google:', error)
+    console.error('❌ Firebase: Error code:', error.code)
+    console.error('❌ Firebase: Error message:', error.message)
+    console.error('❌ Firebase: Full error object:', error)
     throw error
   }
 }

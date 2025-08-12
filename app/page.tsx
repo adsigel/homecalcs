@@ -1,24 +1,19 @@
 'use client'
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
+import { HomeIcon, Building2, FolderOpen, Trash2 } from 'lucide-react'
+import { Property, HomeSaleProperty, InvestmentProperty, PropertiesCollection } from '@/types/property'
+import { createInvestmentProperty, createHomeSaleProperty, loadProperties } from '@/utils/propertyManager'
+import { savePropertiesCollection, loadPropertiesCollection } from '@/utils/cloudPropertyManager'
+import { onAuthStateChange } from '@/utils/firebase'
+import { calculatePITIWithHomeSaleProceeds, calculateDSCR, calculateCapRate, calculateNetProceeds } from '@/utils/calculations'
 import GlobalInputsPanel from '@/components/GlobalInputsPanel'
 import PITICalculator from '@/components/PITICalculator'
 import DSCRCalculator from '@/components/DSCRCalculator'
-import ExportButton from '@/components/ExportButton'
-import SampleDataButton from '@/components/SampleDataButton'
-import PropertyManager from '@/components/PropertyManager'
-import { Property, HomeSaleProperty, InvestmentProperty, PropertiesCollection } from '@/types/property'
-import { calculatePITI, calculatePITIWithHomeSaleProceeds } from '@/utils/calculations'
 import HomeSaleCalculator from '@/components/HomeSaleCalculator'
-import { createInvestmentProperty, createHomeSaleProperty, addProperty, loadProperties } from '@/utils/propertyManager'
-import { 
-  loadPropertiesCollection, 
-  savePropertiesCollection, 
-  subscribeToPropertiesCollection 
-} from '@/utils/cloudPropertyManager'
-import { onAuthStateChange } from '@/utils/firebase'
-import GoogleSignIn from '@/components/GoogleSignIn'
-import { FolderOpen, Home as HomeIcon, Building2, Trash2 } from 'lucide-react'
+import Header from '@/components/Header'
+import SampleDataButton from '@/components/SampleDataButton'
+import ExportButton from '@/components/ExportButton'
 
 export default function Home() {
   const [propertiesCollection, setPropertiesCollection] = useState<PropertiesCollection>({ properties: [], activePropertyId: null })
@@ -165,7 +160,13 @@ export default function Home() {
   }
 
   // Modal callback functions
-  const handleShowNewPropertyDialog = () => setShowNewPropertyDialog(true)
+  const handleShowNewPropertyDialog = () => {
+    // Pre-fill the address if we have an active property
+    if (activeProperty?.streetAddress) {
+      setStreetAddress(activeProperty.streetAddress)
+    }
+    setShowNewPropertyDialog(true)
+  }
   const handleShowManageModal = () => setShowManageModal(true)
   const handleShowSaveDialog = () => {
     if (activeProperty && activeProperty.name && activeProperty.streetAddress) {
@@ -230,7 +231,10 @@ export default function Home() {
       newProperty = createInvestmentProperty(propertyName.trim(), streetAddress.trim())
     }
 
-    const updatedCollection = addProperty(propertiesCollection, newProperty)
+    const updatedCollection = {
+      ...propertiesCollection,
+      properties: [...propertiesCollection.properties, newProperty]
+    }
     setPropertiesCollection(updatedCollection)
     savePropertiesCollection(updatedCollection).catch(error => {
       console.error('Failed to save new property:', error)
@@ -286,7 +290,7 @@ export default function Home() {
   }
   
   // Calculate PITI for DSCR calculator (only for investment properties)
-  const pitiCalculation = useMemo(() => {
+  const pitiCalculation = useCallback(() => {
     if (activeProperty?.calculatorMode !== 'investment') return undefined
     
     const investmentProperty = activeProperty as InvestmentProperty
@@ -300,13 +304,13 @@ export default function Home() {
   }, [activeProperty, propertiesCollection])
   
   // Calculate DSCR if we have rental income (only for investment properties)
-  const dscrCalculation = useMemo(() => {
+  const dscrCalculation = useCallback(() => {
     if (activeProperty?.calculatorMode !== 'investment') return undefined
     
     const investmentProperty = activeProperty as InvestmentProperty
-    if (investmentProperty.grossRentalIncome > 0 && pitiCalculation?.totalMonthlyPITI && pitiCalculation.totalMonthlyPITI > 0) {
-      const { calculateDSCR } = require('@/utils/calculations')
-      return calculateDSCR(investmentProperty, pitiCalculation)
+    const piti = pitiCalculation()
+    if (investmentProperty.grossRentalIncome > 0 && piti?.totalMonthlyPITI && piti.totalMonthlyPITI > 0) {
+      return calculateDSCR(investmentProperty, piti)
     }
     return undefined
   }, [activeProperty, pitiCalculation])
@@ -321,20 +325,15 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Header
+        onShowManageModal={handleShowManageModal}
+        onAuthStateChange={(user: any) => {
+          // This will trigger the auth state change in the useEffect
+          console.log('Auth state changed:', user?.email || 'Signed out')
+        }}
+      />
+
       <div className="container mx-auto px-4 py-8">
-        <header className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">HomeCalcs</h1>
-          <p className="text-lg text-gray-600">Real Estate Investment & Home Sale Calculator</p>
-        </header>
-
-        {/* Google Sign-In */}
-        <div className="mb-6">
-          <GoogleSignIn onAuthStateChange={(user) => {
-            // This will trigger the auth state change in the useEffect
-            console.log('Auth state changed:', user?.email || 'Signed out')
-          }} />
-        </div>
-
         {/* Calculator Navigation */}
         {activeProperty && (
           <div className="mb-6">
@@ -365,21 +364,32 @@ export default function Home() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column - Property Manager + Calculator Results */}
-          <div className="space-y-8">
-            {/* Property Manager */}
-            <PropertyManager
-              activeProperty={activeProperty}
-              onPropertyChange={handlePropertyChange}
-              onShowNewPropertyDialog={handleShowNewPropertyDialog}
-              onShowManageModal={handleShowManageModal}
-              onShowSaveDialog={handleShowSaveDialog}
-              propertiesCollection={propertiesCollection}
-              onPropertiesCollectionChange={handlePropertiesCollectionChange}
-            />
-
-            {/* Calculator Results */}
+          {/* Left Column - Calculator Inputs */}
+          <div>
             {activeProperty && (
+              <>
+                <div className="mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-2">Property Inputs</h2>
+                  <p className="text-sm text-gray-600">Enter your property details and financial information</p>
+                </div>
+                <GlobalInputsPanel 
+                  property={activeProperty} 
+                  onUpdate={handlePropertyUpdate}
+                  propertiesCollection={propertiesCollection}
+                  onPropertiesCollectionChange={handlePropertiesCollectionChange}
+                  onShowNewPropertyDialog={handleShowNewPropertyDialog}
+                />
+              </>
+            )}
+          </div>
+
+          {/* Right Column - Calculator Results */}
+          {activeProperty && (
+            <div>
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Calculation Results</h2>
+                <p className="text-sm text-gray-600">View your financial analysis and projections</p>
+              </div>
               <div className="space-y-6">
                 {activeProperty.calculatorMode === 'investment' && (
                   <>
@@ -391,7 +401,6 @@ export default function Home() {
                     <DSCRCalculator 
                       property={activeProperty as InvestmentProperty} 
                       onUpdate={handlePropertyUpdate}
-                      pitiCalculation={pitiCalculation}
                     />
                   </>
                 )}
@@ -402,17 +411,6 @@ export default function Home() {
                   />
                 )}
               </div>
-            )}
-          </div>
-
-          {/* Right Column - Calculator Inputs */}
-          {activeProperty && (
-            <div>
-              <GlobalInputsPanel 
-                property={activeProperty} 
-                onUpdate={handlePropertyUpdate}
-                propertiesCollection={propertiesCollection}
-              />
             </div>
           )}
         </div>
@@ -433,7 +431,7 @@ export default function Home() {
                 <select
                   value={propertyType}
                   onChange={(e) => setPropertyType(e.target.value as 'homeSale' | 'investment')}
-                  className="input-field w-full"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 >
                   <option value="investment">Investment Property</option>
                   <option value="homeSale">Home Sale Property</option>
@@ -448,7 +446,7 @@ export default function Home() {
                   value={propertyName}
                   onChange={(e) => setPropertyName(e.target.value)}
                   placeholder="Enter property name"
-                  className="input-field w-full"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                   autoFocus
                 />
               </div>
@@ -461,7 +459,7 @@ export default function Home() {
                   value={streetAddress}
                   onChange={(e) => setStreetAddress(e.target.value)}
                   placeholder="Enter street address"
-                  className="input-field w-full"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 />
               </div>
               <div className="flex gap-3">
@@ -619,7 +617,7 @@ export default function Home() {
                   value={propertyName}
                   onChange={(e) => setPropertyName(e.target.value)}
                   placeholder="Enter property name"
-                  className="input-field w-full"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                   autoFocus
                 />
               </div>
@@ -664,7 +662,7 @@ export default function Home() {
                   value={propertyName}
                   onChange={(e) => setPropertyName(e.target.value)}
                   placeholder="Enter property name"
-                  className="input-field w-full"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                   autoFocus
                 />
               </div>
@@ -677,7 +675,7 @@ export default function Home() {
                   value={streetAddress}
                   onChange={(e) => setStreetAddress(e.target.value)}
                   placeholder="Enter street address"
-                  className="input-field w-full"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 />
               </div>
               <div className="text-sm text-gray-600">

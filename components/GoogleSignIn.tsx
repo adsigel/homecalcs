@@ -10,10 +10,25 @@ export default function GoogleSignIn({ onAuthStateChange }: GoogleSignInProps) {
 
   const handleSignIn = async () => {
     try {
+      console.log('🔄 Starting Google sign-in process...')
       const user = await signInWithGoogle()
+      console.log('✅ Google sign-in successful:', user.email)
       onAuthStateChange(user)
-    } catch (error) {
-      console.error('Sign-in failed:', error)
+    } catch (error: any) {
+      console.error('❌ Sign-in failed:', error)
+      console.error('❌ Error code:', error.code)
+      console.error('❌ Error message:', error.message)
+      
+      // Show user-friendly error message
+      if (error.code === 'auth/popup-closed-by-user') {
+        alert('Sign-in was cancelled. Please try again.')
+      } else if (error.code === 'auth/popup-blocked') {
+        alert('Pop-up was blocked. Please allow pop-ups for this site and try again.')
+      } else if (error.code === 'auth/unauthorized-domain') {
+        alert('This domain is not authorized for Google sign-in. Please contact support.')
+      } else {
+        alert(`Sign-in failed: ${error.message}`)
+      }
     }
   }
 

@@ -8,11 +8,17 @@ import { Calculator, DollarSign, TrendingUp, AlertTriangle, Building2, Wrench, H
 interface DSCRCalculatorProps {
   property: InvestmentProperty
   onUpdate: (updates: Partial<InvestmentProperty>) => void
-  pitiCalculation: PITICalculation | undefined
 }
 
-export default function DSCRCalculator({ property, onUpdate, pitiCalculation }: DSCRCalculatorProps) {
+export default function DSCRCalculator({ property, onUpdate }: DSCRCalculatorProps) {
   const [expenseViewMode, setExpenseViewMode] = useState<'annual' | 'monthly'>('annual')
+  
+  // Calculate PITI internally for DSCR calculations
+  const pitiCalculation = useMemo(() => {
+    // Import and use the calculation function directly
+    const { calculatePITIWithHomeSaleProceeds } = require('@/utils/calculations')
+    return calculatePITIWithHomeSaleProceeds(property, undefined)
+  }, [property])
   
   // Only calculate DSCR if we have valid PITI data
   const dscrCalculation = useMemo(() => {

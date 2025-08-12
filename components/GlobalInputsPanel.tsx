@@ -4,14 +4,17 @@ import React from 'react'
 import { Property, HomeSaleProperty, InvestmentProperty, PropertiesCollection } from '@/types/property'
 import { Home, DollarSign, MapPin, Building2, Calendar, TrendingUp, Wrench, Calculator } from 'lucide-react'
 import { formatNumber, calculateNetProceeds } from '@/utils/calculations'
+import EnhancedAddressField from './EnhancedAddressField'
 
 interface GlobalInputsPanelProps {
   property: Property
   onUpdate: (updates: Partial<Property>) => void
   propertiesCollection?: PropertiesCollection
+  onPropertiesCollectionChange?: (collection: PropertiesCollection) => void
+  onShowNewPropertyDialog: () => void
 }
 
-export default function GlobalInputsPanel({ property, onUpdate, propertiesCollection }: GlobalInputsPanelProps) {
+export default function GlobalInputsPanel({ property, onUpdate, propertiesCollection, onPropertiesCollectionChange, onShowNewPropertyDialog }: GlobalInputsPanelProps) {
   const handleInputChange = (field: string, value: string | number) => {
     const numValue = typeof value === 'string' ? parseFloat(value) || 0 : value
     onUpdate({ [field]: numValue } as Partial<Property>)
@@ -99,15 +102,12 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
           
           {/* Address */}
           <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-700">
-              Property Address
-            </label>
-            <input
-              type="text"
-              value={property.streetAddress}
-              onChange={(e) => onUpdate({ streetAddress: e.target.value })}
-              placeholder="Enter property address"
-              className="input-field w-full"
+            <EnhancedAddressField
+              property={property}
+              propertiesCollection={propertiesCollection || { properties: [], activePropertyId: null }}
+              onUpdate={onUpdate}
+              onPropertiesCollectionChange={onPropertiesCollectionChange || (() => {})}
+              onShowNewPropertyDialog={onShowNewPropertyDialog}
             />
           </div>
 
@@ -157,7 +157,7 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                       <select
                         value={property.selectedHomeSalePropertyId || ''}
                         onChange={(e) => onUpdate({ selectedHomeSalePropertyId: e.target.value || undefined })}
-                        className="w-full px-3 py-2 border border-blue-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full h-10 px-3 py-2 border border-blue-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                       >
                         <option value="">-- Select a home sale property --</option>
                         {getAvailableHomeSaleProperties().map((homeSaleProperty) => (
@@ -208,17 +208,17 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                 )}
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Property Type */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
                     <Building2 className="w-4 h-4" />
                     Property Type
                   </label>
                   <select
                     value={property.propertyType}
                     onChange={(e) => handleTextChange('propertyType', e.target.value)}
-                    className="input-field"
+                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 bg-white"
                   >
                     <option value="single-family">Single Family</option>
                     <option value="condo">Condo</option>
@@ -228,8 +228,8 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                 </div>
 
                 {/* Year Built */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
                     Year Built
                   </label>
@@ -239,12 +239,12 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                     onChange={(e) => handleInputChange('yearBuilt', e.target.value)}
                     min="1800"
                     max={new Date().getFullYear() + 1}
-                    className="input-field"
+                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                   />
                 </div>
 
                 {/* Market Value */}
-                <div>
+                <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                     <DollarSign className="w-4 h-4" />
                     Current Market Value
@@ -257,12 +257,12 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                       handleInputChange('marketValue', value)
                     }}
                     placeholder="0"
-                    className="input-field"
+                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                   />
                 </div>
 
                 {/* Purchase Price */}
-                <div>
+                <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                     <DollarSign className="w-4 h-4" />
                     Purchase Price
@@ -277,13 +277,13 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                     placeholder="0"
                     min="0"
                     step="1000"
-                    className="input-field"
+                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                   />
                 </div>
 
                 {/* Down Payment */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
                     <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
                       <DollarSign className="w-4 h-4" />
                       Down Payment
@@ -295,11 +295,11 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                         </span>
                       )}
                     </label>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1">
                       <button
                         type="button"
                         onClick={() => onUpdate({ downPaymentInputType: 'dollars' })}
-                        className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                        className={`px-3 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                           property.downPaymentInputType === 'dollars' 
                             ? 'bg-primary-600 text-white' 
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -310,7 +310,7 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                       <button
                         type="button"
                         onClick={() => onUpdate({ downPaymentInputType: 'percentage' })}
-                        className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                        className={`px-3 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                           property.downPaymentInputType === 'percentage' 
                             ? 'bg-primary-600 text-white' 
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -343,10 +343,10 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                     placeholder="0"
                     min="0"
                     step={property.downPaymentInputType === 'percentage' ? 0.01 : 1000}
-                    className={`input-field ${property.useHomeSaleProceedsAsDownPayment ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    className={`w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${property.useHomeSaleProceedsAsDownPayment ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                     disabled={property.useHomeSaleProceedsAsDownPayment}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500">
                     {property.downPaymentInputType === 'percentage' ? 'Percentage of purchase price' : 'Dollar amount'}
                     {property.downPaymentInputType === 'percentage' && property.purchasePrice > 0 && getEffectiveDownPayment() > 0 && (
                       <span className="block mt-1 text-gray-600">
@@ -362,8 +362,8 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                 </div>
 
                 {/* Interest Rate */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
                     Interest Rate (%)
                   </label>
                   <input
@@ -377,22 +377,22 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                     min="0"
                     max="25"
                     step="0.001"
-                    className="input-field"
+                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500">
                     Enter rate with up to 3 decimal places (e.g., 7.125%)
                   </p>
                 </div>
 
                 {/* Loan Term */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
                     Loan Term (years)
                   </label>
                   <select
                     value={property.loanTerm}
                     onChange={(e) => handleInputChange('loanTerm', e.target.value)}
-                    className="input-field"
+                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 bg-white"
                   >
                     <option value={15}>15 years</option>
                     <option value={20}>20 years</option>
@@ -402,17 +402,17 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                 </div>
 
                 {/* Tax Input Toggle and Field */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
                     <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
                       <DollarSign className="w-4 h-4" />
                       Property Taxes
                     </label>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1">
                       <button
                         type="button"
                         onClick={() => onUpdate({ taxInputType: 'annual' })}
-                        className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                        className={`px-3 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                           property.taxInputType === 'annual' 
                             ? 'bg-primary-600 text-white' 
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -423,7 +423,7 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                       <button
                         type="button"
                         onClick={() => onUpdate({ taxInputType: 'monthly' })}
-                        className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                        className={`px-3 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                           property.taxInputType === 'monthly' 
                             ? 'bg-primary-600 text-white' 
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -444,9 +444,9 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                     placeholder="0"
                     min="0"
                     step={property.taxInputType === 'monthly' ? 100 : 1000}
-                    className="input-field"
+                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500">
                     {property.taxInputType === 'monthly' ? 'Monthly amount' : 'Annual amount'}
                     {property.taxInputType === 'monthly' && property.annualTaxes > 0 && (
                       <span className="block mt-1 text-gray-600">
@@ -457,17 +457,17 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                 </div>
 
                 {/* Insurance Input Toggle and Field */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
                     <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
                       <DollarSign className="w-4 h-4" />
                       Insurance
                     </label>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1">
                       <button
                         type="button"
                         onClick={() => onUpdate({ insuranceInputType: 'annual' })}
-                        className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                        className={`px-3 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                           property.insuranceInputType === 'annual' 
                             ? 'bg-primary-600 text-white' 
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -478,7 +478,7 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                       <button
                         type="button"
                         onClick={() => onUpdate({ insuranceInputType: 'monthly' })}
-                        className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                        className={`px-3 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                           property.insuranceInputType === 'monthly' 
                             ? 'bg-primary-600 text-white' 
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -499,9 +499,9 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                     placeholder="0"
                     min="0"
                     step={property.insuranceInputType === 'monthly' ? 100 : 1000}
-                    className="input-field"
+                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500">
                     {property.taxInputType === 'monthly' ? 'Monthly amount' : 'Annual amount'}
                     {property.insuranceInputType === 'monthly' && property.annualInsurance > 0 && (
                       <span className="block mt-1 text-gray-600">
@@ -526,11 +526,11 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                       <DollarSign className="w-4 h-4" />
                       Gross Rental Income
                     </label>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1">
                       <button
                         type="button"
                         onClick={() => onUpdate({ rentalIncomeInputType: 'annual' })}
-                        className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                        className={`px-3 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                           property.rentalIncomeInputType === 'annual' 
                             ? 'bg-primary-600 text-white' 
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -541,7 +541,7 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                       <button
                         type="button"
                         onClick={() => onUpdate({ rentalIncomeInputType: 'monthly' })}
-                        className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                        className={`px-3 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                           property.rentalIncomeInputType === 'monthly' 
                             ? 'bg-primary-600 text-white' 
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -560,7 +560,7 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                       handleInputChange('grossRentalIncome', annualValue)
                     }}
                     placeholder="0"
-                    className="input-field"
+                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     {property.rentalIncomeInputType === 'monthly' ? 'Monthly amount' : 'Annual amount'}
@@ -583,7 +583,7 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                     min="0"
                     max="50"
                     step="1"
-                    className="input-field"
+                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Standard discount for vacancy, maintenance, and unexpected expenses
@@ -615,11 +615,11 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                       <span className="ml-2 text-sm text-gray-600">Include in DSCR</span>
                     </label>
                   </div>
-                  <div className="flex items-center space-x-2 mb-2">
+                  <div className="flex items-center space-x-1 mb-2">
                     <button
                       type="button"
                       onClick={() => onUpdate({ propertyManagementInputType: 'dollars' })}
-                      className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                      className={`px-3 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                         property.propertyManagementInputType === 'dollars' 
                           ? 'bg-primary-600 text-white' 
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -630,7 +630,7 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                     <button
                       type="button"
                       onClick={() => onUpdate({ propertyManagementInputType: 'percentage' })}
-                      className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                      className={`px-3 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                         property.propertyManagementInputType === 'percentage' 
                           ? 'bg-primary-600 text-white' 
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -656,7 +656,7 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                     placeholder="0"
                     min="0"
                     step={property.propertyManagementInputType === 'percentage' ? 0.01 : 1000}
-                    className="input-field"
+                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     {property.propertyManagementInputType === 'percentage' ? 'Percentage of rental income' : 'Annual dollar amount'}
@@ -680,11 +680,11 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                       <span className="ml-2 text-sm text-gray-600">Include in DSCR</span>
                     </label>
                   </div>
-                  <div className="flex items-center space-x-2 mb-2">
+                  <div className="flex items-center space-x-1 mb-2">
                     <button
                       type="button"
                       onClick={() => onUpdate({ maintenanceInputType: 'dollars' })}
-                      className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                      className={`px-3 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                         property.maintenanceInputType === 'dollars' 
                           ? 'bg-primary-600 text-white' 
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -695,7 +695,7 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                     <button
                       type="button"
                       onClick={() => onUpdate({ maintenanceInputType: 'percentage' })}
-                      className={`px-2 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                      className={`px-3 py-1 text-xs rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                         property.maintenanceInputType === 'percentage' 
                           ? 'bg-primary-600 text-white' 
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -721,7 +721,7 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                     placeholder="0"
                     min="0"
                     step={property.maintenanceInputType === 'percentage' ? 0.01 : 1000}
-                    className="input-field"
+                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     {property.maintenanceInputType === 'percentage' ? 'Percentage of rental income' : 'Annual dollar amount'}
@@ -780,7 +780,7 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                     placeholder="0"
                     min="0"
                     step={property.hoaInputType === 'monthly' ? 100 : 1000}
-                    className="input-field"
+                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     {property.hoaInputType === 'monthly' ? 'Monthly amount' : 'Annual amount'}
@@ -799,10 +799,10 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
               Home Sale Details
             </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Sale Price */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
                   <DollarSign className="w-4 h-4" />
                   Sale Price
                 </label>
@@ -816,13 +816,13 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                   placeholder="0"
                   min="0"
                   step="1000"
-                  className="input-field"
+                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 />
               </div>
 
               {/* Outstanding Mortgage Balance */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
                   <DollarSign className="w-4 h-4" />
                   Outstanding Mortgage Balance
                 </label>
@@ -836,13 +836,13 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                   placeholder="0"
                   min="0"
                   step="1000"
-                  className="input-field"
+                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 />
               </div>
 
               {/* Original Purchase Price */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
                   <DollarSign className="w-4 h-4" />
                   Original Purchase Price
                 </label>
@@ -856,13 +856,13 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                   placeholder="0"
                   min="0"
                   step="1000"
-                  className="input-field"
+                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 />
               </div>
 
               {/* Realtor Commission */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
                   <DollarSign className="w-4 h-4" />
                   Realtor Commission
                 </label>
@@ -879,12 +879,12 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                     placeholder="0"
                     min="0"
                     step={property.realtorCommissionInputType === 'percentage' ? 0.01 : 1000}
-                    className="input-field flex-1"
+                    className="flex-1 h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                   />
                   <select
                     value={property.realtorCommissionInputType}
                     onChange={(e) => onUpdate({ realtorCommissionInputType: e.target.value as 'dollars' | 'percentage' })}
-                    className="input-field w-24"
+                    className="w-24 h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 bg-white"
                   >
                     <option value="dollars">$</option>
                     <option value="percentage">%</option>
@@ -893,8 +893,8 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
               </div>
 
               {/* Closing Costs */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
                   <DollarSign className="w-4 h-4" />
                   Closing Costs
                 </label>
@@ -908,13 +908,13 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                   placeholder="0"
                   min="0"
                   step="1000"
-                  className="input-field"
+                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 />
               </div>
 
               {/* Capital Gains Tax Rate */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
                   Capital Gains Tax Rate (%)
                 </label>
                 <input
@@ -928,15 +928,15 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                   min="0"
                   max="100"
                   step="0.01"
-                  className="input-field"
+                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500">
                   Enter rate with up to 2 decimal places (e.g., 15.5%)
                 </p>
               </div>
 
               {/* 1031 Exchange Toggle */}
-              <div>
+              <div className="space-y-2">
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -946,21 +946,21 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                   />
                   <span className="text-sm font-medium text-gray-700">Use 1031 Exchange</span>
                 </label>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500">
                   Defer capital gains tax by exchanging for investment property
                 </p>
               </div>
 
               {/* Replacement Property Selection */}
               {property.use1031Exchange && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
                     Replacement Property
                   </label>
                   <select
                     value={property.selectedReplacementPropertyId || ''}
                     onChange={(e) => onUpdate({ selectedReplacementPropertyId: e.target.value || undefined })}
-                    className="input-field"
+                    className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 bg-white"
                   >
                     <option value="">Select replacement property</option>
                     {propertiesCollection?.properties
@@ -971,9 +971,6 @@ export default function GlobalInputsPanel({ property, onUpdate, propertiesCollec
                         </option>
                       ))}
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Select the investment property you plan to purchase
-                  </p>
                 </div>
               )}
             </div>
