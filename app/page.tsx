@@ -1,275 +1,235 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { HomeIcon, Building2, FolderOpen, Trash2 } from 'lucide-react'
-import { Property, HomeSaleProperty, InvestmentProperty, PropertiesCollection } from '@/types/property'
-import { createInvestmentProperty, createHomeSaleProperty, loadProperties } from '@/utils/propertyManager'
+import { Property, PropertiesCollection } from '@/types/property'
+import { createProperty, addCalculatorMode, switchCalculatorMode, supportsCalculatorMode } from '@/utils/propertyManager'
 import { savePropertiesCollection, loadPropertiesCollection } from '@/utils/cloudPropertyManager'
 import { onAuthStateChange } from '@/utils/firebase'
-import { calculatePITIWithHomeSaleProceeds, calculateDSCR, calculateCapRate, calculateNetProceeds } from '@/utils/calculations'
+import { loadProperties } from '@/utils/propertyManager'
+import Header from '@/components/Header'
 import GlobalInputsPanel from '@/components/GlobalInputsPanel'
 import PITICalculator from '@/components/PITICalculator'
 import DSCRCalculator from '@/components/DSCRCalculator'
 import HomeSaleCalculator from '@/components/HomeSaleCalculator'
-import Header from '@/components/Header'
-import SampleDataButton from '@/components/SampleDataButton'
-import ExportButton from '@/components/ExportButton'
+import PropertyManager from '@/components/PropertyManager'
 
 export default function Home() {
+  const [isHydrated, setIsHydrated] = useState(false)
   const [propertiesCollection, setPropertiesCollection] = useState<PropertiesCollection>({ properties: [], activePropertyId: null })
   const [activeProperty, setActiveProperty] = useState<Property | null>(null)
-  const [calculatorMode, setCalculatorMode] = useState<'homeSale' | 'investment'>('investment')
-  const [isHydrated, setIsHydrated] = useState(false)
+  const [calculatorMode, setCalculatorMode] = useState<'investment' | 'homeSale'>('investment')
   
   // Modal states
   const [showNewPropertyDialog, setShowNewPropertyDialog] = useState(false)
   const [showManageModal, setShowManageModal] = useState(false)
   const [showSaveDialog, setShowSaveDialog] = useState(false)
   const [showRenameModal, setShowRenameModal] = useState(false)
-  const [propertyToRename, setPropertyToRename] = useState<Property | null>(null)
   const [propertyName, setPropertyName] = useState('')
   const [streetAddress, setStreetAddress] = useState('')
-  const [propertyType, setPropertyType] = useState<'homeSale' | 'investment'>('investment')
+  const [propertyType, setPropertyType] = useState<'investment' | 'homeSale'>('investment')
+  const [propertyToRename, setPropertyToRename] = useState<Property | null>(null)
 
-  // Initialize authentication and load properties
-  useEffect(() => {
-    const initializeStorage = async () => {
-      console.log('🔄 Starting authentication initialization...')
-      setIsHydrated(true)
-      
-      // Set up auth state listener
-      const unsubscribe = onAuthStateChange(async (user) => {
-        if (user) {
-          console.log('✅ User authenticated:', user.email)
-          console.log('👤 User ID:', user.uid)
-          
-          // Load properties from cloud storage
-          console.log('📥 Loading properties from cloud storage...')
-          const loaded = await loadPropertiesCollection()
-          console.log('📦 Loaded properties:', loaded)
-          
-          if (loaded) {
-            setPropertiesCollection(loaded)
-            
-            // If no properties exist, create a default investment property
-            if (loaded.properties.length === 0) {
-              console.log('🆕 No properties found, creating default...')
-              const defaultProperty = createInvestmentProperty('New Property', '')
-              const newCollection = { properties: [defaultProperty], activePropertyId: defaultProperty.id }
-              setPropertiesCollection(newCollection)
-              savePropertiesCollection(newCollection).catch(error => {
-                console.error('❌ Failed to save default property:', error)
-              })
-              setActiveProperty(defaultProperty)
-              setCalculatorMode(defaultProperty.calculatorMode)
-            } else if (loaded.activePropertyId) {
-              console.log('✅ Found existing properties, setting active...')
-              const active = loaded.properties.find((p: Property) => p.id === loaded.activePropertyId)
-              if (active) {
-                setActiveProperty(active)
-                setCalculatorMode(active.calculatorMode)
-              }
-            }
-          }
-        } else {
-          console.log('👤 No user authenticated, using localStorage...')
-          // Fallback to localStorage when not authenticated
-          const loaded = loadProperties()
-          setPropertiesCollection(loaded)
-          if (loaded.properties.length > 0 && loaded.activePropertyId) {
-            const active = loaded.properties.find((p: Property) => p.id === loaded.activePropertyId)
-            if (active) {
-              setActiveProperty(active)
-              setCalculatorMode(active.calculatorMode)
-            }
-          }
-        }
-      })
-      
-      // Cleanup subscription
-      return () => unsubscribe()
-    }
-    
-    initializeStorage()
-  }, [])
-
-  // Save properties to cloud storage whenever they change
-  useEffect(() => {
-    if (isHydrated) {
-      console.log('💾 Saving properties to cloud storage:', propertiesCollection)
-      savePropertiesCollection(propertiesCollection).catch(error => {
-        console.error('❌ Failed to save properties to cloud storage:', error)
-      })
-    }
-  }, [propertiesCollection, isHydrated])
-
-  // Handle property deletion and active property updates
-  useEffect(() => {
-    if (!isHydrated) return
-    
-    // If the active property was deleted, find a new active property
-    if (activeProperty && !propertiesCollection.properties.find(p => p.id === activeProperty.id)) {
-      if (propertiesCollection.properties.length > 0) {
-        // Set the first available property as active
-        const newActive = propertiesCollection.properties[0]
-        setActiveProperty(newActive)
-        setCalculatorMode(newActive.calculatorMode)
-      } else {
-        // No properties left, create a default one
-        const defaultProperty = createInvestmentProperty('New Property', '')
-        const newCollection = { properties: [defaultProperty], activePropertyId: defaultProperty.id }
-        setPropertiesCollection(newCollection)
-        savePropertiesCollection(newCollection).catch(error => {
-          console.error('Failed to save default property:', error)
-        })
-        setActiveProperty(defaultProperty)
-        setCalculatorMode(defaultProperty.calculatorMode)
-      }
-    }
-  }, [propertiesCollection, activeProperty, isHydrated])
-
-  const handlePropertyChange = (property: Property) => {
-    setActiveProperty(property)
-    setCalculatorMode(property.calculatorMode)
-    
-    // Update the active property ID in the collection
-    const updatedCollection = {
-      ...propertiesCollection,
-      activePropertyId: property.id
-    }
+  // Handle properties collection changes
+  const handlePropertiesCollectionChange = useCallback((updatedCollection: PropertiesCollection) => {
     setPropertiesCollection(updatedCollection)
     savePropertiesCollection(updatedCollection).catch(error => {
-      console.error('Failed to save property change:', error)
+      console.error('Failed to save properties collection:', error)
     })
-  }
+  }, [])
 
+  // Handle property updates
   const handlePropertyUpdate = (updates: Partial<Property>) => {
     if (!activeProperty) return
 
-    const updatedProperty = { ...activeProperty, ...updates } as Property
+    const updatedProperty = { ...activeProperty, ...updates }
     setActiveProperty(updatedProperty)
     
-    // Update the property in the collection
+    // Update the property in the collection (but don't auto-save)
     const updatedCollection = {
       ...propertiesCollection,
       properties: propertiesCollection.properties.map(p => 
         p.id === activeProperty.id ? updatedProperty : p
       )
     }
+    
     setPropertiesCollection(updatedCollection)
   }
 
-  // Modal callback functions
-  const handleShowNewPropertyDialog = () => {
-    // Pre-fill the address if we have an active property
-    if (activeProperty?.streetAddress) {
-      setStreetAddress(activeProperty.streetAddress)
-    }
-    setShowNewPropertyDialog(true)
-  }
-  const handleShowManageModal = () => setShowManageModal(true)
-  const handleShowSaveDialog = () => {
-    if (activeProperty && activeProperty.name && activeProperty.streetAddress) {
-      // Property already has a name and address, just save it directly
-      saveCurrentProperty()
-    } else {
-      // Property needs a name, show the dialog
-      setShowSaveDialog(true)
-    }
-  }
-
-  const handleShowRenameModal = (property: Property) => {
-    setPropertyToRename(property)
-    setPropertyName(property.name || '')
-    setStreetAddress(property.streetAddress || '')
-    setShowRenameModal(true)
-  }
-
-  const handleRenameProperty = () => {
-    if (!propertyToRename || !propertyName.trim() || !streetAddress.trim()) return
+  // Manual save function
+  const handleSaveProperty = () => {
+    if (!activeProperty) return
     
-    const updatedProperty = {
-      ...propertyToRename,
-      name: propertyName.trim(),
-      streetAddress: streetAddress.trim()
-    }
+    console.log('💾 Saving property:', activeProperty.name)
     
     // Update the property in the collection
     const updatedCollection = {
       ...propertiesCollection,
       properties: propertiesCollection.properties.map(p => 
-        p.id === propertyToRename.id ? updatedProperty : p
+        p.id === activeProperty.id ? activeProperty : p
       )
     }
     
-    // If this is the active property, update it too
-    if (activeProperty?.id === propertyToRename.id) {
-      setActiveProperty(updatedProperty)
-    }
-    
     setPropertiesCollection(updatedCollection)
-    savePropertiesCollection(updatedCollection).catch(error => {
-      console.error('Failed to save renamed property:', error)
+    
+    // Save to Firebase
+    savePropertiesCollection(updatedCollection).then(success => {
+      if (success) {
+        console.log('✅ Property saved successfully')
+        // Could add a toast notification here
+      } else {
+        console.error('❌ Failed to save property')
+        // Could add an error notification here
+      }
+    }).catch(error => {
+      console.error('❌ Error saving property:', error)
     })
-    setShowRenameModal(false)
-    setPropertyToRename(null)
-    setPropertyName('')
-    setStreetAddress('')
   }
 
-  const handlePropertiesCollectionChange = useCallback((collection: PropertiesCollection) => {
-    setPropertiesCollection(collection)
-  }, [])
+  // Monitor activeProperty changes for debugging
+  useEffect(() => {
+    console.log('🔄 activeProperty changed to:', activeProperty?.name, 'ID:', activeProperty?.id)
+    console.log('🔄 activeProperty data:', activeProperty)
+  }, [activeProperty])
 
-  const createNewProperty = () => {
-    if (!propertyName.trim() || !streetAddress.trim()) return
+  // Monitor calculatorMode changes for debugging
+  useEffect(() => {
+    console.log('🔄 calculatorMode changed to:', calculatorMode)
+  }, [calculatorMode])
 
-    let newProperty: Property
-    if (propertyType === 'homeSale') {
-      newProperty = createHomeSaleProperty(propertyName.trim(), streetAddress.trim())
-    } else {
-      newProperty = createInvestmentProperty(propertyName.trim(), streetAddress.trim())
-    }
-
+  // Handle property selection from address field dropdown
+  const handleAddressFieldPropertySelect = (selectedProperty: Property) => {
+    console.log('🔄 Switching to property:', selectedProperty.name, 'Mode:', selectedProperty.activeMode)
+    console.log('📊 Selected property data:', selectedProperty)
+    
+    // Set the selected property as active (use the original property data)
+    setActiveProperty(selectedProperty)
+    
+    // Set the calculator mode to match the property's active mode
+    setCalculatorMode(selectedProperty.activeMode)
+    
+    // Update the properties collection to set this as the active property
     const updatedCollection = {
       ...propertiesCollection,
-      properties: [...propertiesCollection.properties, newProperty]
+      activePropertyId: selectedProperty.id
     }
+    
     setPropertiesCollection(updatedCollection)
+    
+    // Save the selection to Firebase
     savePropertiesCollection(updatedCollection).catch(error => {
-      console.error('Failed to save new property:', error)
+      console.error('❌ Failed to save property selection:', error)
     })
     
-    setActiveProperty(newProperty)
-    setCalculatorMode(newProperty.calculatorMode)
-    
-    setShowNewPropertyDialog(false)
-    setPropertyName('')
-    setStreetAddress('')
+    console.log('✅ Property selection complete - activeProperty should now be:', selectedProperty.name)
   }
 
-  const saveCurrentProperty = () => {
-    if (!activeProperty) return
-
-    // If property already has a name and address, just save it directly
-    if (activeProperty.name && activeProperty.streetAddress) {
+  // Handle calculator mode changes
+  const handleCalculatorModeChange = (mode: 'investment' | 'homeSale') => {
+    console.log('🔄 Attempting to change calculator mode to:', mode)
+    console.log('📊 Current active property:', activeProperty)
+    console.log('🔍 Property activeMode before change:', activeProperty?.activeMode)
+    console.log('🔍 Current calculatorMode before change:', calculatorMode)
+    
+    if (!activeProperty) {
+      console.error('❌ No active property to change mode for')
+      return
+    }
+    
+    // Check if property supports this mode
+    const supportsMode = supportsCalculatorMode(activeProperty, mode)
+    console.log('🔍 Property supports mode:', mode, 'Result:', supportsMode)
+    
+    if (!supportsMode) {
+      console.log('➕ Adding calculator mode:', mode, 'to property')
+      // Add the mode if it's not supported
+      const updatedProperty = addCalculatorMode(activeProperty, mode)
+      console.log('✅ Updated property with new mode:', updatedProperty)
+      setActiveProperty(updatedProperty)
+      
+      // Update the property in the collection
       const updatedCollection = {
         ...propertiesCollection,
         properties: propertiesCollection.properties.map(p => 
-          p.id === activeProperty.id ? activeProperty : p
+          p.id === activeProperty.id ? updatedProperty : p
         )
       }
       
       setPropertiesCollection(updatedCollection)
-      savePropertiesCollection(updatedCollection).catch(error => {
-        console.error('Failed to save property:', error)
-      })
-      setShowSaveDialog(false)
-      return
+      // Don't auto-save - user will save manually when ready
     }
+    
+    // Switch to the mode
+    console.log('🔄 Switching to mode:', mode)
+    const switchedProperty = switchCalculatorMode(activeProperty, mode)
+    console.log('✅ Switched property:', switchedProperty)
+    console.log('🔍 Property activeMode after switch:', switchedProperty.activeMode)
+    setActiveProperty(switchedProperty)
+    setCalculatorMode(mode)
+    
+    // Update the property in the collection
+    const updatedCollection = {
+      ...propertiesCollection,
+      properties: propertiesCollection.properties.map(p => 
+        p.id === activeProperty.id ? switchedProperty : p
+      )
+    }
+    
+    setPropertiesCollection(updatedCollection)
+    // Don't auto-save - user will save manually when ready
+  }
 
-    // Otherwise, require a property name
-    if (!propertyName.trim()) return
+  // Show new property dialog
+  const handleShowNewPropertyDialog = () => {
+    setStreetAddress(activeProperty?.streetAddress || '')
+    setPropertyName('')
+    setPropertyType('investment')
+    setShowNewPropertyDialog(true)
+  }
+
+  // Show manage properties modal
+  const handleShowManageModal = () => {
+    setShowManageModal(true)
+  }
+
+  // Show save dialog
+  const handleShowSaveDialog = () => {
+    if (activeProperty) {
+      setPropertyName(activeProperty.name)
+      setStreetAddress(activeProperty.streetAddress)
+    }
+    setShowSaveDialog(true)
+  }
+
+  // Show rename modal
+  const handleShowRenameModal = (property: Property) => {
+    setPropertyToRename(property)
+    setPropertyName(property.name)
+    setShowRenameModal(true)
+  }
+
+  // Create new property
+  const createNewProperty = () => {
+    if (!propertyName.trim() || !streetAddress.trim()) return
+
+    const newProperty = createProperty(propertyName.trim(), streetAddress.trim(), propertyType)
+    const updatedCollection = {
+      properties: [...propertiesCollection.properties, newProperty],
+      activePropertyId: newProperty.id
+    }
+    
+    setPropertiesCollection(updatedCollection)
+    setActiveProperty(newProperty)
+    setCalculatorMode(propertyType)
+    setShowNewPropertyDialog(false)
+    
+    savePropertiesCollection(updatedCollection).catch(error => {
+      console.error('Failed to save new property:', error)
+    })
+  }
+
+  // Save current property
+  const saveCurrentProperty = () => {
+    if (!activeProperty || !propertyName.trim()) return
 
     const updatedProperty = { ...activeProperty, name: propertyName.trim() }
     const updatedCollection = {
@@ -280,45 +240,125 @@ export default function Home() {
     }
     
     setPropertiesCollection(updatedCollection)
+    setActiveProperty(updatedProperty)
+    setShowSaveDialog(false)
+    
     savePropertiesCollection(updatedCollection).catch(error => {
       console.error('Failed to save property:', error)
     })
-    setActiveProperty(updatedProperty)
-    
-    setShowSaveDialog(false)
-    setPropertyName('')
   }
-  
-  // Calculate PITI for DSCR calculator (only for investment properties)
-  const pitiCalculation = useCallback(() => {
-    if (activeProperty?.calculatorMode !== 'investment') return undefined
-    
-    const investmentProperty = activeProperty as InvestmentProperty
-    const calculation = calculatePITIWithHomeSaleProceeds(investmentProperty, propertiesCollection)
-    
-    // Only return valid PITI calculation if we have meaningful values
-    if (calculation.totalMonthlyPITI > 0 && investmentProperty.purchasePrice > 0) {
-      return calculation
+
+  // Rename property
+  const handleRenameProperty = () => {
+    if (!propertyToRename || !propertyName.trim()) return
+
+    const updatedProperty = { ...propertyToRename, name: propertyName.trim() }
+    const updatedCollection = {
+      ...propertiesCollection,
+      properties: propertiesCollection.properties.map(p => 
+        p.id === propertyToRename.id ? updatedProperty : p
+      )
     }
-    return undefined
-  }, [activeProperty, propertiesCollection])
-  
-  // Calculate DSCR if we have rental income (only for investment properties)
-  const dscrCalculation = useCallback(() => {
-    if (activeProperty?.calculatorMode !== 'investment') return undefined
     
-    const investmentProperty = activeProperty as InvestmentProperty
-    const piti = pitiCalculation()
-    if (investmentProperty.grossRentalIncome > 0 && piti?.totalMonthlyPITI && piti.totalMonthlyPITI > 0) {
-      return calculateDSCR(investmentProperty, piti)
+    setPropertiesCollection(updatedCollection)
+    if (activeProperty?.id === propertyToRename.id) {
+      setActiveProperty(updatedProperty)
     }
-    return undefined
-  }, [activeProperty, pitiCalculation])
+    setShowRenameModal(false)
+    
+    savePropertiesCollection(updatedCollection).catch(error => {
+      console.error('Failed to save renamed property:', error)
+    })
+  }
+
+  // Handle property selection from property manager
+  const handlePropertySelect = (property: Property) => {
+    setActiveProperty(property)
+    setCalculatorMode(property.activeMode)
+    setPropertiesCollection(prev => ({ ...prev, activePropertyId: property.id }))
+  }
+
+  // Handle property deletion
+  useEffect(() => {
+    if (propertiesCollection.properties.length === 0) return
+    
+    // If active property was deleted, set first available as active
+    if (!propertiesCollection.properties.find(p => p.id === propertiesCollection.activePropertyId)) {
+      const firstProperty = propertiesCollection.properties[0]
+      setActiveProperty(firstProperty)
+      setCalculatorMode(firstProperty.activeMode)
+      setPropertiesCollection(prev => ({ ...prev, activePropertyId: firstProperty.id }))
+    }
+  }, [propertiesCollection.properties])
+
+  // Initialize storage and authentication
+  useEffect(() => {
+    const initializeStorage = async () => {
+      console.log('🔄 Starting authentication initialization...')
+      setIsHydrated(true)
+      
+      const unsubscribe = onAuthStateChange(async (user) => {
+        if (user) {
+          console.log('✅ User authenticated:', user.email)
+          console.log('👤 User ID:', user.uid)
+          
+          const loaded = await loadPropertiesCollection()
+          if (loaded) {
+            setPropertiesCollection(loaded)
+            if (loaded.properties.length === 0) {
+              const defaultProperty = createProperty('New Property', '', 'investment')
+              const newCollection = { properties: [defaultProperty], activePropertyId: defaultProperty.id }
+              setPropertiesCollection(newCollection)
+              savePropertiesCollection(newCollection).catch(error => {
+                console.error('❌ Failed to save default property:', error)
+              })
+              setActiveProperty(defaultProperty)
+              setCalculatorMode(defaultProperty.activeMode)
+            } else if (loaded.activePropertyId) {
+              const active = loaded.properties.find((p: Property) => p.id === loaded.activePropertyId)
+              if (active) {
+                setActiveProperty(active)
+                setCalculatorMode(active.activeMode)
+              }
+            }
+          } else {
+            console.error('❌ Failed to load properties collection')
+            console.log('🔄 Falling back to localStorage...')
+            const loaded = loadProperties()
+            setPropertiesCollection(loaded)
+            if (loaded.properties.length > 0 && loaded.activePropertyId) {
+              const active = loaded.properties.find((p: Property) => p.id === loaded.activePropertyId)
+              if (active) {
+                setActiveProperty(active)
+                setCalculatorMode(active.activeMode)
+              }
+            }
+          }
+        } else {
+          console.log('👤 No user authenticated, using localStorage...')
+          const loaded = loadProperties()
+          setPropertiesCollection(loaded)
+          if (loaded.properties.length > 0 && loaded.activePropertyId) {
+            const active = loaded.properties.find((p: Property) => p.id === loaded.activePropertyId)
+            if (active) {
+              setActiveProperty(active)
+              setCalculatorMode(active.activeMode)
+            }
+          }
+        }
+      })
+      return () => unsubscribe()
+    }
+    initializeStorage()
+  }, [])
 
   if (!isHydrated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-pulse text-lg">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading HomeCalcs...</p>
+        </div>
       </div>
     )
   }
@@ -328,56 +368,66 @@ export default function Home() {
       <Header
         onShowManageModal={handleShowManageModal}
         onAuthStateChange={(user: any) => {
-          // This will trigger the auth state change in the useEffect
           console.log('Auth state changed:', user?.email || 'Signed out')
         }}
       />
-
-      <div className="container mx-auto px-4 py-8">
-        {/* Calculator Navigation */}
-        {activeProperty && (
-          <div className="mb-6">
-            <div className="card">
-              <div className="flex items-center justify-center gap-4">
-                <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                  calculatorMode === 'investment' 
-                    ? 'bg-green-100 text-green-800 border border-green-300' 
-                    : 'bg-gray-100 text-gray-600 border border-gray-300'
-                }`}>
-                  <Building2 className="w-5 h-5" />
-                  <span className="font-medium">Investment Property</span>
-                </div>
-                <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                  calculatorMode === 'homeSale' 
-                    ? 'bg-blue-100 text-blue-800 border border-blue-300' 
-                    : 'bg-gray-100 text-gray-600 border border-gray-300'
-                }`}>
-                  <HomeIcon className="w-5 h-5" />
-                  <span className="font-medium">Home Sale Property</span>
-                </div>
-              </div>
-              <div className="text-center mt-2 text-sm text-gray-600">
-                Current Mode: {calculatorMode === 'homeSale' ? 'Home Sale Calculator' : 'Investment Calculator'}
-              </div>
-            </div>
-          </div>
-        )}
-
+      
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column - Calculator Inputs */}
           <div>
             {activeProperty && (
               <>
-                <div className="mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">Property Inputs</h2>
-                  <p className="text-sm text-gray-600">Enter your property details and financial information</p>
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-2">Property Inputs</h2>
+                    <p className="text-sm text-gray-600">Enter your property details and financial information</p>
+                  </div>
+                  
+                  {/* Save Button */}
+                  <button
+                    onClick={handleSaveProperty}
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+                    title="Save all changes to this property"
+                  >
+                    💾 Save Changes
+                  </button>
                 </div>
-                <GlobalInputsPanel 
-                  property={activeProperty} 
+                
+                {/* Calculator Mode Selector */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Calculator Mode</h3>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => handleCalculatorModeChange('investment')}
+                      className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                        calculatorMode === 'investment'
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                    >
+                      Investment Analysis
+                    </button>
+                    <button
+                      onClick={() => handleCalculatorModeChange('homeSale')}
+                      className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                        calculatorMode === 'homeSale'
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                    >
+                      Sale Analysis
+                    </button>
+                  </div>
+                </div>
+                <GlobalInputsPanel
+                  property={activeProperty}
                   onUpdate={handlePropertyUpdate}
                   propertiesCollection={propertiesCollection}
                   onPropertiesCollectionChange={handlePropertiesCollectionChange}
                   onShowNewPropertyDialog={handleShowNewPropertyDialog}
+                  calculatorMode={calculatorMode}
+                  onPropertySelect={handleAddressFieldPropertySelect}
                 />
               </>
             )}
@@ -391,22 +441,24 @@ export default function Home() {
                 <p className="text-sm text-gray-600">View your financial analysis and projections</p>
               </div>
               <div className="space-y-6">
-                {activeProperty.calculatorMode === 'investment' && (
+                {calculatorMode === 'investment' && (
                   <>
-                    <PITICalculator 
-                      property={activeProperty as InvestmentProperty} 
+                    <PITICalculator
+                      property={activeProperty}
                       onUpdate={handlePropertyUpdate}
                       propertiesCollection={propertiesCollection}
+                      calculatorMode={calculatorMode}
                     />
-                    <DSCRCalculator 
-                      property={activeProperty as InvestmentProperty} 
+                    <DSCRCalculator
+                      property={activeProperty}
                       onUpdate={handlePropertyUpdate}
+                      calculatorMode={calculatorMode}
                     />
                   </>
                 )}
-                {activeProperty.calculatorMode === 'homeSale' && (
-                  <HomeSaleCalculator 
-                    property={activeProperty as HomeSaleProperty} 
+                {calculatorMode === 'homeSale' && (
+                  <HomeSaleCalculator
+                    property={activeProperty}
                     propertiesCollection={propertiesCollection}
                   />
                 )}
@@ -414,69 +466,60 @@ export default function Home() {
             </div>
           )}
         </div>
-      </div>
+      </main>
 
-      {/* Modals - rendered at page level to avoid sticky positioning issues */}
-      
       {/* New Property Dialog */}
       {showNewPropertyDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg shadow-2xl max-w-md w-full mx-4">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4 text-center">Create New Property</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold mb-4">Create New Property</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Property Type
-                </label>
-                <select
-                  value={propertyType}
-                  onChange={(e) => setPropertyType(e.target.value as 'homeSale' | 'investment')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                >
-                  <option value="investment">Investment Property</option>
-                  <option value="homeSale">Home Sale Property</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Property Name
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Property Name</label>
                 <input
                   type="text"
                   value={propertyName}
                   onChange={(e) => setPropertyName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Enter property name"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                  autoFocus
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Street Address
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
                 <input
                   type="text"
                   value={streetAddress}
                   onChange={(e) => setStreetAddress(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Enter street address"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 />
               </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={createNewProperty}
-                  disabled={!propertyName.trim() || !streetAddress.trim()}
-                  className="btn-primary flex-1"
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Initial Calculator Mode</label>
+                <select
+                  value={propertyType}
+                  onChange={(e) => setPropertyType(e.target.value as 'investment' | 'homeSale')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
-                  Create
-                </button>
-                <button
-                  onClick={() => setShowNewPropertyDialog(false)}
-                  className="btn-secondary flex-1"
-                >
-                  Cancel
-                </button>
+                  <option value="investment">Investment Property</option>
+                  <option value="homeSale">Home Sale</option>
+                </select>
               </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setShowNewPropertyDialog(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={createNewProperty}
+                disabled={!propertyName.trim() || !streetAddress.trim()}
+                className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
+              >
+                Create Property
+              </button>
             </div>
           </div>
         </div>
@@ -484,164 +527,56 @@ export default function Home() {
 
       {/* Manage Properties Modal */}
       {showManageModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-hidden flex flex-col shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Manage Properties</h3>
-              <button
-                onClick={() => setShowManageModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto">
-              {propertiesCollection.properties.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <FolderOpen className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                  <p>No saved properties yet</p>
-                  <p className="text-sm">Create your first property to get started</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {propertiesCollection.properties.map((property) => (
-                    <div
-                      key={property.id}
-                      className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
-                        activeProperty?.id === property.id
-                          ? 'border-primary-300 bg-primary-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        {property.calculatorMode === 'homeSale' ? 
-                          <HomeIcon className="w-4 h-4 text-blue-600" /> : 
-                          <Building2 className="w-4 h-4 text-green-600" />
-                        }
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 truncate">
-                            {property.name || property.streetAddress || 'Unnamed Property'}
-                          </div>
-                          <div className="text-sm text-gray-500 truncate">
-                            {property.streetAddress || 'No address'}
-                          </div>
-                          <div className="text-xs text-gray-400">
-                            Type: {property.calculatorMode === 'homeSale' ? 'Home Sale' : 'Investment'}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            const foundProperty = propertiesCollection.properties.find(p => p.id === property.id)
-                            if (foundProperty) {
-                              setActiveProperty(foundProperty)
-                              setCalculatorMode(foundProperty.calculatorMode)
-                              setShowManageModal(false)
-                            }
-                          }}
-                          className="btn-primary text-sm px-3 py-1"
-                          title="Load this property"
-                        >
-                          Load
-                        </button>
-                        <button
-                          onClick={() => handleShowRenameModal(property)}
-                          className="btn-secondary text-sm px-3 py-1"
-                          title="Rename this property"
-                        >
-                          Rename
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm('Are you sure you want to delete this property?')) {
-                              const updatedCollection = {
-                                ...propertiesCollection,
-                                properties: propertiesCollection.properties.filter(p => p.id !== property.id)
-                              }
-                              setPropertiesCollection(updatedCollection)
-                              savePropertiesCollection(updatedCollection).catch(error => {
-                                console.error('Failed to save property:', error)
-                              })
-                              
-                              if (activeProperty?.id === property.id) {
-                                if (updatedCollection.properties.length > 0) {
-                                  setActiveProperty(updatedCollection.properties[0])
-                                  setCalculatorMode(updatedCollection.properties[0].calculatorMode)
-                                } else {
-                                  const defaultProperty = createInvestmentProperty('New Property', '')
-                                                                      const newCollection = { properties: [defaultProperty], activePropertyId: defaultProperty.id }
-                                    setPropertiesCollection(newCollection)
-                                    savePropertiesCollection(newCollection).catch(error => {
-                                      console.error('Failed to save property:', error)
-                                    })
-                                    setActiveProperty(defaultProperty)
-                                  setCalculatorMode(defaultProperty.calculatorMode)
-                                }
-                              }
-                            }
-                          }}
-                          className="text-red-500 hover:text-red-700 p-1"
-                          title="Delete property"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <PropertyManager
+          propertiesCollection={propertiesCollection}
+          onPropertiesCollectionChange={handlePropertiesCollectionChange}
+          onPropertySelect={handlePropertySelect}
+          onShowRenameModal={handleShowRenameModal}
+          onClose={() => setShowManageModal(false)}
+        />
       )}
 
-      {/* Save Dialog - Only show for new properties that need names */}
+      {/* Save Dialog */}
       {showSaveDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Name Your Property</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold mb-4">Save Property</h3>
             <div className="space-y-4">
-              <div className="text-sm text-gray-600 mb-4">
-                <p>This property needs a name to be saved. Properties with names and addresses are automatically saved as you make changes.</p>
-              </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Property Name
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Property Name</label>
                 <input
                   type="text"
                   value={propertyName}
                   onChange={(e) => setPropertyName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Enter property name"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                  autoFocus
                 />
               </div>
-              {activeProperty && (
-                <div className="text-sm text-gray-600">
-                  <p>Type: {activeProperty.calculatorMode === 'homeSale' ? 'Home Sale' : 'Investment'}</p>
-                  <p>Address: {activeProperty.streetAddress || 'Not specified'}</p>
-                </div>
-              )}
-              <div className="flex gap-3">
-                <button
-                  onClick={saveCurrentProperty}
-                  disabled={!propertyName.trim()}
-                  className="btn-primary flex-1"
-                >
-                  Save
-                </button>
-                <button
-                  onClick={() => setShowSaveDialog(false)}
-                  className="btn-secondary flex-1"
-                >
-                  Cancel
-                </button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
+                <input
+                  type="text"
+                  value={streetAddress}
+                  onChange={(e) => setStreetAddress(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="Enter street address"
+                />
               </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setShowSaveDialog(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveCurrentProperty}
+                disabled={!propertyName.trim()}
+                className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
+              >
+                Save Property
+              </button>
             </div>
           </div>
         </div>
@@ -649,60 +584,35 @@ export default function Home() {
 
       {/* Rename Property Modal */}
       {showRenameModal && propertyToRename && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Rename Property</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold mb-4">Rename Property</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Property Name
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Property Name</label>
                 <input
                   type="text"
                   value={propertyName}
                   onChange={(e) => setPropertyName(e.target.value)}
-                  placeholder="Enter property name"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                  autoFocus
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="Enter new property name"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Street Address
-                </label>
-                <input
-                  type="text"
-                  value={streetAddress}
-                  onChange={(e) => setStreetAddress(e.target.value)}
-                  placeholder="Enter street address"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                />
-              </div>
-              <div className="text-sm text-gray-600">
-                <p>Type: {propertyToRename.calculatorMode === 'homeSale' ? 'Home Sale' : 'Investment'}</p>
-                <p>Current Name: {propertyToRename.name || 'Unnamed'}</p>
-                <p>Current Address: {propertyToRename.streetAddress || 'Not specified'}</p>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={handleRenameProperty}
-                  disabled={!propertyName.trim() || !streetAddress.trim()}
-                  className="btn-primary flex-1"
-                >
-                  Update
-                </button>
-                <button
-                  onClick={() => {
-                    setShowRenameModal(false)
-                    setPropertyToRename(null)
-                    setPropertyName('')
-                    setStreetAddress('')
-                  }}
-                  className="btn-secondary flex-1"
-                >
-                  Cancel
-                </button>
-              </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setShowRenameModal(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRenameProperty}
+                disabled={!propertyName.trim()}
+                className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
+              >
+                Rename Property
+              </button>
             </div>
           </div>
         </div>

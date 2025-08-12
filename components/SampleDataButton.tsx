@@ -2,29 +2,45 @@
 
 import React from 'react'
 import { Database } from 'lucide-react'
-import { PropertyData } from '@/types/property'
+import { Property } from '@/types/property'
 
 interface SampleDataButtonProps {
-  onLoadSampleData: (data: PropertyData) => void
+  onLoadSampleData: (data: Property) => void
 }
 
 export default function SampleDataButton({ onLoadSampleData }: SampleDataButtonProps) {
   const loadSampleData = () => {
-    const sampleData: PropertyData = {
+    const sampleData: Property = {
+      id: 'sample-property',
+      name: 'Sample Property',
+      streetAddress: '123 Sample Street, Anytown, USA',
+      lastUpdated: new Date().toISOString(),
+      
+      // Shared property details
       purchasePrice: 450000,
-      downPayment: 90000,
+      originalPurchasePrice: 400000,
+      yearBuilt: 2010,
+      propertyType: 'single-family',
+      
+      // Mortgage details
+      outstandingMortgageBalance: 350000,
       interestRate: 6.5,
       loanTerm: 30,
+      
+      // Tax and insurance
       annualTaxes: 5400,
       annualInsurance: 1200,
+      taxInputType: 'dollar',
+      insuranceInputType: 'dollar',
+      
+      // Market value
       marketValue: 450000,
-      streetAddress: '123 Sample Street, Anytown, USA',
-      propertyType: 'single-family',
-      yearBuilt: 2010,
-      taxInputType: 'annual',
-      insuranceInputType: 'annual',
-      downPaymentInputType: 'dollars',
-      // DSCR Calculator sample data
+      
+      // Calculator modes
+      supportedModes: ['investment', 'homeSale'],
+      activeMode: 'investment',
+      
+      // Investment data
       grossRentalIncome: 36000,
       rentalIncomeInputType: 'annual',
       rentalIncomeDiscount: 25,
@@ -35,20 +51,22 @@ export default function SampleDataButton({ onLoadSampleData }: SampleDataButtonP
       maintenanceInputType: 'percentage',
       includeMaintenance: true,
       hoaFees: 0,
-      hoaInputType: 'annual',
+      hoaInputType: 'dollar',
       includeHoaFees: false,
-      // Home Sale Calculator sample data
+      downPayment: 90000,
+      downPaymentInputType: 'dollar',
+      useHomeSaleProceedsAsDownPayment: false,
+      selectedHomeSalePropertyId: null,
+      
+      // Home sale data
       salePrice: 500000,
-      outstandingMortgageBalance: 350000,
       realtorCommission: 6,
       realtorCommissionInputType: 'percentage',
       closingCosts: 8000,
       capitalGainsTaxRate: 15,
-      originalPurchasePrice: 400000,
-      // Calculator mode
-      calculatorMode: 'investment',
-      // Use home sale proceeds as down payment
-      useHomeSaleProceedsAsDownPayment: false,
+      use1031Exchange: false,
+      selectedReplacementPropertyId: null,
+      qiFees: 1500,
     }
     
     onLoadSampleData(sampleData)

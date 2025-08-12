@@ -1,17 +1,22 @@
 'use client'
 
 import React from 'react'
-import { HomeSaleProperty, PropertiesCollection } from '@/types/property'
+import { Property, PropertiesCollection } from '@/types/property'
 import { calculateNetProceeds } from '@/utils/calculations'
 import { DollarSign, TrendingUp, Calculator, Home, Receipt, Building2, AlertTriangle } from 'lucide-react'
 
 interface HomeSaleCalculatorProps {
-  property: HomeSaleProperty
+  property: Property
   propertiesCollection?: PropertiesCollection
 }
 
 export default function HomeSaleCalculator({ property, propertiesCollection }: HomeSaleCalculatorProps) {
+  // Only show for home sale mode
+  if (property.activeMode !== 'homeSale') return null
+  
   const calculation = calculateNetProceeds(property, propertiesCollection)
+  
+  if (!calculation) return null
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
@@ -89,6 +94,22 @@ export default function HomeSaleCalculator({ property, propertiesCollection }: H
         </div>
       )}
 
+      {/* Boot Warning */}
+      {calculation.use1031Exchange && (calculation.boot || 0) > 0 && (
+        <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <h3 className="font-medium text-orange-800">Boot Detected</h3>
+              <p className="text-sm text-orange-700 mt-1">
+                Your replacement property is worth ${(calculation.boot || 0).toLocaleString()} less than your sale price. 
+                This "boot" amount is taxable at your capital gains rate.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Detailed Breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Left Column */}
@@ -97,105 +118,77 @@ export default function HomeSaleCalculator({ property, propertiesCollection }: H
           <div className="space-y-3">
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Sale Price</span>
-              <span className="font-medium">${property.salePrice.toLocaleString()}</span>
+              <span className="font-medium">${(property.salePrice || 0).toLocaleString()}</span>
             </div>
-            
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Outstanding Mortgage</span>
-              <span className="font-medium text-red-600">-${property.outstandingMortgageBalance.toLocaleString()}</span>
+              <span className="font-medium">-${(property.outstandingMortgageBalance || 0).toLocaleString()}</span>
             </div>
-            
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Realtor Commission</span>
-              <span className="font-medium text-red-600">
-                -${(property.realtorCommissionInputType === 'percentage' 
-                  ? (property.salePrice * property.realtorCommission) / 100
-                  : property.realtorCommission).toLocaleString()}
-              </span>
+              <span className="font-medium">-${(calculation.realtorCommission || 0).toLocaleString()}</span>
             </div>
-            
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Closing Costs</span>
-              <span className="font-medium text-red-600">-${property.closingCosts.toLocaleString()}</span>
+              <span className="font-medium">-${(property.closingCosts || 0).toLocaleString()}</span>
             </div>
-
             {calculation.use1031Exchange && (
               <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-gray-600">QI Fees (1031 Exchange)</span>
-                <span className="font-medium text-red-600">-${calculation.qiFees.toLocaleString()}</span>
+                <span className="text-gray-600">QI Fees</span>
+                <span className="font-medium">-${(calculation.qiFees || 0).toLocaleString()}</span>
               </div>
             )}
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+              <span className="text-gray-600">Capital Gains Tax</span>
+              <span className="font-medium">-${(calculation.capitalGainsTax || 0).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 font-semibold text-lg">
+              <span className="text-gray-900">Net Proceeds</span>
+              <span className="text-green-600">${(calculation.netProceeds || 0).toLocaleString()}</span>
+            </div>
           </div>
         </div>
 
         {/* Right Column */}
         <div>
-          <h3 className="font-semibold text-gray-900 mb-3">Capital Gains Analysis</h3>
+          <h3 className="font-semibold text-gray-900 mb-3">Tax Details</h3>
           <div className="space-y-3">
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Original Purchase Price</span>
-              <span className="font-medium">${property.originalPurchasePrice.toLocaleString()}</span>
+              <span className="font-medium">${(property.originalPurchasePrice || 0).toLocaleString()}</span>
             </div>
-            
-            <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="text-gray-600">Adjusted Basis</span>
-              <span className="font-medium">${property.originalPurchasePrice.toLocaleString()}</span>
-            </div>
-            
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Capital Gain</span>
-              <span className="font-medium text-green-600">
-                ${(property.salePrice - property.originalPurchasePrice).toLocaleString()}
-              </span>
+              <span className="font-medium">${((property.salePrice || 0) - (property.originalPurchasePrice || 0)).toLocaleString()}</span>
             </div>
-
-            {/* Boot Warning */}
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+              <span className="text-gray-600">Tax Rate</span>
+              <span className="font-medium">{property.capitalGainsTaxRate}%</span>
+            </div>
             {calculation.use1031Exchange && calculation.boot > 0 && (
-              <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm text-orange-800">
-                    <p className="font-medium">Boot Detected</p>
-                    <p className="mt-1">
-                      Your replacement property purchase price (${property.selectedReplacementPropertyId ? 
-                        (propertiesCollection?.properties.find(p => p.id === property.selectedReplacementPropertyId) as any)?.purchasePrice?.toLocaleString() || '0' : 
-                        '0'}) is lower than your sale price. 
-                      The difference of ${calculation.boot.toLocaleString()} is subject to immediate capital gains tax.
-                    </p>
-                  </div>
-                </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-gray-600">Boot Tax</span>
+                <span className="font-medium text-orange-600">${(calculation.bootTax || 0).toLocaleString()}</span>
               </div>
             )}
-          </div>
-        </div>
-      </div>
-
-      {/* Net Proceeds Calculation */}
-      <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-        <h4 className="font-semibold text-gray-900 mb-3">Net Proceeds Calculation</h4>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span>Sale Price</span>
-            <span>${property.salePrice.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between text-red-600">
-            <span>- Outstanding Mortgage</span>
-            <span>-${property.outstandingMortgageBalance.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between text-red-600">
-            <span>- Total Expenses</span>
-            <span>-${calculation.totalExpenses.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between text-red-600">
-            <span>- Capital Gains Tax</span>
-            <span>-${calculation.capitalGainsTax.toLocaleString()}</span>
-          </div>
-          <div className="border-t border-gray-300 pt-2 font-semibold">
-            <div className="flex justify-between">
-              <span>= Net Proceeds</span>
-              <span>${calculation.netProceeds.toLocaleString()}</span>
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+              <span className="text-gray-600">Total Tax</span>
+              <span className="font-medium text-red-600">${(calculation.capitalGainsTax || 0).toLocaleString()}</span>
             </div>
           </div>
+
+          {/* 1031 Exchange Benefits */}
+          {calculation.use1031Exchange && (
+            <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <h4 className="font-medium text-green-900 mb-2">1031 Exchange Benefits</h4>
+              <div className="text-sm text-green-700 space-y-1">
+                <p>• Tax deferral on capital gains</p>
+                <p>• Reinvest proceeds in like-kind property</p>
+                <p>• Maintain investment position</p>
+                <p>• Avoid immediate tax liability</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

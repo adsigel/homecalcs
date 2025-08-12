@@ -1,107 +1,102 @@
-// Individual property interfaces
-export interface HomeSaleProperty {
+// Base property interface with shared fields
+export interface BaseProperty {
   id: string
   name: string
   streetAddress: string
-  salePrice: number
-  outstandingMortgageBalance: number
-  realtorCommission: number
-  realtorCommissionInputType: 'dollars' | 'percentage'
-  closingCosts: number
-  capitalGainsTaxRate: number
-  originalPurchasePrice: number
-  // 1031 Exchange fields
-  use1031Exchange: boolean
-  selectedReplacementPropertyId: string | null // ID of the replacement investment property
-  calculatorMode: 'homeSale'
-}
-
-export interface InvestmentProperty {
-  id: string
-  name: string
-  streetAddress: string
+  lastUpdated: string
+  
+  // Shared property details
   purchasePrice: number
-  downPayment: number
+  originalPurchasePrice: number
+  yearBuilt?: number
+  propertyType: 'single-family' | 'multi-family' | 'condo' | 'townhouse' | 'other'
+  
+  // Mortgage details (shared between investment and sale analysis)
+  outstandingMortgageBalance: number
   interestRate: number
   loanTerm: number
+  
+  // Tax and insurance (shared)
   annualTaxes: number
   annualInsurance: number
+  taxInputType: 'dollar' | 'percentage'
+  insuranceInputType: 'dollar' | 'percentage'
+  
+  // Current market value (for both investment and sale analysis)
   marketValue: number
-  propertyType: 'single-family' | 'condo' | 'townhouse' | 'multi-family'
-  yearBuilt: number
-  taxInputType: 'annual' | 'monthly'
-  insuranceInputType: 'annual' | 'monthly'
-  downPaymentInputType: 'dollars' | 'percentage'
-  // DSCR Calculator inputs
-  grossRentalIncome: number
-  rentalIncomeInputType: 'annual' | 'monthly'
-  rentalIncomeDiscount: number
-  propertyManagementFee: number
-  propertyManagementInputType: 'dollars' | 'percentage'
-  includePropertyManagement: boolean
-  maintenanceReserve: number
-  maintenanceInputType: 'dollars' | 'percentage'
-  includeMaintenance: boolean
-  hoaFees: number
-  hoaInputType: 'annual' | 'monthly'
-  includeHoaFees: boolean
-  // Integration with home sale proceeds
-  useHomeSaleProceedsAsDownPayment: boolean
-  selectedHomeSalePropertyId: string | null // ID of the home sale property whose proceeds to use
-  calculatorMode: 'investment'
+  
+  // Calculator modes this property supports
+  supportedModes: ('investment' | 'homeSale')[]
+  
+  // Active calculator mode for this property
+  activeMode: 'investment' | 'homeSale'
 }
 
-// Union type for all properties
-export type Property = HomeSaleProperty | InvestmentProperty
+// Investment-specific data
+export interface InvestmentData {
+  // Rental income
+  grossRentalIncome: number
+  rentalIncomeInputType: 'monthly' | 'annual'
+  rentalIncomeDiscount: number
+  
+  // Operating expenses
+  propertyManagementFee: number
+  propertyManagementInputType: 'dollar' | 'percentage'
+  includePropertyManagement: boolean
+  
+  maintenanceReserve: number
+  maintenanceInputType: 'dollar' | 'percentage'
+  includeMaintenance: boolean
+  
+  hoaFees: number
+  hoaInputType: 'dollar' | 'percentage'
+  includeHoaFees: boolean
+  
+  // Down payment and financing
+  downPayment: number
+  downPaymentInputType: 'dollar' | 'percentage'
+  useHomeSaleProceedsAsDownPayment: boolean
+  selectedHomeSalePropertyId: string | null
+}
 
-// Properties collection stored in localStorage/cloud storage
+// Home sale specific data
+export interface HomeSaleData {
+  // Sale details
+  salePrice: number
+  realtorCommission: number
+  realtorCommissionInputType: 'dollar' | 'percentage'
+  closingCosts: number
+  
+  // Tax considerations
+  capitalGainsTaxRate: number
+  use1031Exchange: boolean
+  selectedReplacementPropertyId: string | null
+  
+  // 1031 exchange details
+  qiFees: number // Qualified Intermediary fees
+}
+
+// Main property interface combining all data
+export interface Property extends BaseProperty, InvestmentData, HomeSaleData {}
+
+// Properties collection
 export interface PropertiesCollection {
   properties: Property[]
   activePropertyId: string | null
-  lastUpdated?: string // ISO timestamp for cloud storage sync
+  lastUpdated?: string
 }
 
-// Legacy interface for backward compatibility during transition
-export interface PropertyData {
-  purchasePrice: number
-  downPayment: number
-  interestRate: number
-  loanTerm: number
-  annualTaxes: number
-  annualInsurance: number
-  marketValue: number
-  streetAddress: string
-  propertyType: 'single-family' | 'condo' | 'townhouse' | 'multi-family'
-  yearBuilt: number
-  taxInputType: 'annual' | 'monthly'
-  insuranceInputType: 'annual' | 'monthly'
-  downPaymentInputType: 'dollars' | 'percentage'
-  // DSCR Calculator inputs
-  grossRentalIncome: number
-  rentalIncomeInputType: 'annual' | 'monthly'
-  rentalIncomeDiscount: number
-  propertyManagementFee: number
-  propertyManagementInputType: 'dollars' | 'percentage'
-  includePropertyManagement: boolean
-  maintenanceReserve: number
-  maintenanceInputType: 'dollars' | 'percentage'
-  includeMaintenance: boolean
-  hoaFees: number
-  hoaInputType: 'annual' | 'monthly'
-  includeHoaFees: boolean
-  // Home Sale Calculator inputs
-  salePrice: number
-  outstandingMortgageBalance: number
-  realtorCommission: number
-  realtorCommissionInputType: 'dollars' | 'percentage'
-  closingCosts: number
-  capitalGainsTaxRate: number
-  originalPurchasePrice: number
-  // Calculator mode
-  calculatorMode: 'investment' | 'homeSale'
-  // Use home sale proceeds as down payment
-  useHomeSaleProceedsAsDownPayment: boolean
+// Legacy interfaces for backward compatibility during transition
+export interface InvestmentProperty extends Property {
+  calculatorMode: 'investment'
 }
+
+export interface HomeSaleProperty extends Property {
+  calculatorMode: 'homeSale'
+}
+
+// Union type for backward compatibility
+export type LegacyProperty = InvestmentProperty | HomeSaleProperty
 
 export interface PITICalculation {
   loanAmount: number

@@ -28,8 +28,42 @@ export const savePropertiesCollection = async (propertiesCollection: PropertiesC
       return false
     }
 
+    // Validate and clean the data before saving
+    const cleanedCollection = {
+      ...propertiesCollection,
+      properties: propertiesCollection.properties.map(property => {
+        // Ensure all required fields are present and no undefined values
+        const cleanedProperty = { ...property }
+        
+        // Remove any undefined values and replace with defaults
+        Object.keys(cleanedProperty).forEach(key => {
+          if (cleanedProperty[key as keyof Property] === undefined) {
+            console.warn(`Found undefined value for field: ${key} in property: ${property.id}`)
+            // Set appropriate defaults based on field type
+            if (key === 'supportedModes') {
+              (cleanedProperty as any).supportedModes = ['investment']
+            } else if (key === 'activeMode') {
+              (cleanedProperty as any).activeMode = 'investment'
+            } else if (typeof cleanedProperty[key as keyof Property] === 'number') {
+              (cleanedProperty as any)[key] = 0
+            } else if (typeof cleanedProperty[key as keyof Property] === 'boolean') {
+              (cleanedProperty as any)[key] = false
+            } else if (typeof cleanedProperty[key as keyof Property] === 'string') {
+              (cleanedProperty as any)[key] = ''
+            } else {
+              (cleanedProperty as any)[key] = null
+            }
+          }
+        })
+        
+        return cleanedProperty
+      })
+    }
+
+    console.log('Saving cleaned properties collection:', cleanedCollection)
+    
     const docRef = doc(db, 'users', userId, COLLECTION_NAME, 'collection')
-    await setDoc(docRef, propertiesCollection)
+    await setDoc(docRef, cleanedCollection)
     return true
   } catch (error) {
     console.error('Failed to save properties collection:', error)

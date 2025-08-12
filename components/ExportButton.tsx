@@ -2,97 +2,99 @@
 
 import React from 'react'
 import { Download, FileText } from 'lucide-react'
-import { PropertyData, PITICalculation, DSCRCalculation } from '@/types/property'
+import { Property } from '@/types/property'
 
 interface ExportButtonProps {
-  propertyData: PropertyData
-  pitiCalculation: PITICalculation
-  dscrCalculation?: DSCRCalculation
+  property: Property
 }
 
-export default function ExportButton({ propertyData, pitiCalculation, dscrCalculation }: ExportButtonProps) {
-  const exportData = () => {
-    const exportObject = {
-      timestamp: new Date().toISOString(),
-      propertyData,
-      pitiCalculation,
-      dscrCalculation,
-    }
-
-    const dataStr = JSON.stringify(exportObject, null, 2)
-    const dataBlob = new Blob([dataStr], { type: 'application/json' })
-    
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(dataBlob)
-    link.download = `homecalcs-export-${new Date().toISOString().split('T')[0]}.json`
-    link.click()
-  }
-
-  const exportCSV = () => {
-    const csvRows = [
-      ['Property Analysis Report', ''],
-      ['Generated', new Date().toLocaleString()],
-      ['', ''],
-      ['Property Details', ''],
-      ['Address', propertyData.streetAddress || 'N/A'],
-      ['Property Type', propertyData.propertyType],
-      ['Year Built', propertyData.yearBuilt],
-      ['Purchase Price', `$${propertyData.purchasePrice.toLocaleString()}`],
-      ['Down Payment', `$${propertyData.downPayment.toLocaleString()}`],
-      ['Interest Rate', `${propertyData.interestRate}%`],
-      ['Loan Term', `${propertyData.loanTerm} years`],
-      ['Annual Taxes', `$${propertyData.annualTaxes.toLocaleString()}`],
-      ['Annual Insurance', `$${propertyData.annualInsurance.toLocaleString()}`],
-      ['', ''],
-      ['PITI Calculations', ''],
-      ['Monthly PITI', `$${pitiCalculation.totalMonthlyPITI.toLocaleString()}`],
-      ['Annual PITI', `$${pitiCalculation.annualPITI.toLocaleString()}`],
-      ['Loan Amount', `$${pitiCalculation.loanAmount.toLocaleString()}`],
-      ['Down Payment %', `${pitiCalculation.downPaymentPercentage.toFixed(1)}%`],
-      ['PMI Required', pitiCalculation.requiresPMI ? 'Yes' : 'No'],
-      ['', ''],
+export default function ExportButton({ property }: ExportButtonProps) {
+  const exportToCSV = () => {
+    // Create CSV content
+    const csvContent = [
+      ['Property Name', property.name || 'Unnamed Property'],
+      ['Street Address', property.streetAddress || ''],
+      ['Property Type', property.propertyType || ''],
+      ['Year Built', property.yearBuilt || ''],
+      ['Purchase Price', property.purchasePrice || ''],
+      ['Original Purchase Price', property.originalPurchasePrice || ''],
+      ['Market Value', property.marketValue || ''],
+      ['Active Calculator Mode', property.activeMode || ''],
+      ['Supported Modes', property.supportedModes.join(', ') || ''],
+      ['', ''], // Empty row for spacing
+      ['Investment Data', ''],
+      ['Down Payment', property.downPayment || ''],
+      ['Interest Rate', property.interestRate || ''],
+      ['Loan Term', property.loanTerm || ''],
+      ['Annual Taxes', property.annualTaxes || ''],
+      ['Annual Insurance', property.annualInsurance || ''],
+      ['Gross Rental Income', property.grossRentalIncome || ''],
+      ['Rental Income Type', property.rentalIncomeInputType || ''],
+      ['Rental Income Discount', property.rentalIncomeDiscount || ''],
+      ['Property Management Fee', property.propertyManagementFee || ''],
+      ['Maintenance Reserve', property.maintenanceReserve || ''],
+      ['HOA Fees', property.hoaFees || ''],
+      ['', ''], // Empty row for spacing
+      ['Home Sale Data', ''],
+      ['Sale Price', property.salePrice || ''],
+      ['Outstanding Mortgage Balance', property.outstandingMortgageBalance || ''],
+      ['Realtor Commission', property.realtorCommission || ''],
+      ['Closing Costs', property.closingCosts || ''],
+      ['Capital Gains Tax Rate', property.capitalGainsTaxRate || ''],
+      ['Use 1031 Exchange', property.use1031Exchange || ''],
+      ['QI Fees', property.qiFees || ''],
+      ['', ''], // Empty row for spacing
+      ['Last Updated', property.lastUpdated || '']
     ]
 
-    if (dscrCalculation) {
-      csvRows.push(
-        ['DSCR Analysis', ''],
-        ['DSCR Ratio', dscrCalculation.dscrRatio.toFixed(2)],
-        ['Monthly Cash Flow', `$${dscrCalculation.monthlyCashFlow.toLocaleString()}`],
-        ['Annual Cash Flow', `$${dscrCalculation.annualCashFlow.toLocaleString()}`],
-        ['Gross Rental Income', `$${dscrCalculation.grossRentalIncome.toLocaleString()}`],
-        ['Net Rental Income', `$${dscrCalculation.discountedRentalIncome.toLocaleString()}`],
-        ['Total Annual Expenses', `$${dscrCalculation.totalExpenses.toLocaleString()}`],
-        ['', '']
-      )
-    }
+    // Convert to CSV string
+    const csvString = csvContent.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n')
+    
+    // Create and download file
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `${property.name || 'property'}_export.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
-    const csvContent = csvRows.map(row => row.join(',')).join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `homecalcs-report-${new Date().toISOString().split('T')[0]}.csv`
-    a.click()
-    window.URL.revokeObjectURL(url)
+  const exportToJSON = () => {
+    // Create JSON content
+    const jsonContent = JSON.stringify(property, null, 2)
+    
+    // Create and download file
+    const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `${property.name || 'property'}_export.json`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   return (
     <div className="flex gap-2">
       <button
-        onClick={exportData}
-        className="btn-primary flex items-center gap-2"
-        title="Export as JSON"
+        onClick={exportToCSV}
+        className="btn-secondary flex items-center gap-2"
+        title="Export to CSV"
       >
         <Download className="w-4 h-4" />
-        Export JSON
+        CSV
       </button>
       <button
-        onClick={exportCSV}
+        onClick={exportToJSON}
         className="btn-secondary flex items-center gap-2"
-        title="Export as CSV"
+        title="Export to JSON"
       >
         <FileText className="w-4 h-4" />
-        Export CSV
+        JSON
       </button>
     </div>
   )

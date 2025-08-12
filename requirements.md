@@ -229,10 +229,29 @@ Common inputs that may be reused across calculators:
 
 ## Future Enhancements
 
-### 1. UI/UX Improvements 🔄
-**Status: Partially Implemented - Mobile optimization pending**
+### UI/UX Improvements
+- **Form Alignment & Consistency**: ✅ COMPLETED - Standardized input field styling, consistent heights for picklists, improved spacing
+- **Header & Navigation**: ✅ COMPLETED - Added app header with hamburger menu for Sign In/Out and Manage Properties
+- **Property Management Integration**: ✅ COMPLETED - Integrated "add new property" directly with Property Address field
+- **Layout Optimization**: ✅ COMPLETED - Flipped inputs/outputs layout (inputs left/top, outputs right/bottom)
+- **Property Renaming**: ✅ COMPLETED - Users can rename existing properties
+- **Expense Breakdown Transparency**: ✅ COMPLETED - Property management, maintenance, and HOA fees always visible in DSCR breakdown
+- **Decimal Precision**: ✅ COMPLETED - Mortgage rates support 3 decimals, other percentages support 2 decimals
+- **Number Formatting**: ✅ COMPLETED - Added comma separators for dollar amounts
 
-- **Optimize Mobile View**: Enhance responsive design for mobile devices, including better touch interactions, optimized layouts for small screens, and mobile-specific navigation patterns
+### Technical Debt & Cleanup
+- **UI Regressions from Architectural Refactor**: ⚠️ IDENTIFIED - During the transition to flexible multi-mode architecture, some UI features were lost:
+  - Thousands separator commas in input fields
+  - Some input field formatting and validation
+  - Minor styling inconsistencies
+  - Priority: LOW - Core functionality working, UI polish can be addressed in future updates
+
+### External Data Integration
+- **MLS Data Integration**: ⚠️ DEPRIORITIZED - Budget constraints prevent immediate implementation
+- **Data Source Options**: 
+  - MLS APIs (professional, authoritative, but costly)
+  - Redfin/Zillow scraping (free but legally risky, less reliable)
+  - Manual entry (current approach, reliable but time-consuming)
 
 ### 2. Multi-Property Management ✅
 **Status: Completed**

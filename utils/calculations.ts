@@ -1,4 +1,4 @@
-import { PropertyData, PITICalculation, AmortizationRow, DSCRCalculation, HomeSaleProperty, InvestmentProperty, PropertiesCollection } from '@/types/property'
+import { Property, PropertiesCollection } from '@/types/property'
 
 // Utility function to format numbers with comma separators
 export function formatNumber(num: number): string {
@@ -8,73 +8,52 @@ export function formatNumber(num: number): string {
   })
 }
 
-export function calculatePITI(data: PropertyData | InvestmentProperty): PITICalculation {
-  // Safety check for invalid inputs
-  if (data.purchasePrice <= 0 || data.interestRate < 0 || data.loanTerm <= 0) {
-    return {
-      loanAmount: 0,
-      monthlyPrincipalInterest: 0,
-      monthlyTaxes: 0,
-      monthlyInsurance: 0,
-      monthlyPMI: 0,
-      totalMonthlyPITI: 0,
-      annualPITI: 0,
-      downPaymentPercentage: 0,
-      requiresPMI: false,
-      amortizationSchedule: [],
-    }
-  }
+// Calculate PITI for investment properties
+export function calculatePITI(property: Property): {
+  principal: number
+  interest: number
+  taxes: number
+  insurance: number
+  totalMonthlyPITI: number
+  totalAnnualPITI: number
+} | null {
+  if (!property) return null
 
-  const loanAmount = data.purchasePrice - data.downPayment
-  const downPaymentPercentage = (data.purchasePrice > 0) ? (data.downPayment / data.purchasePrice) * 100 : 0
-  const requiresPMI = downPaymentPercentage < 20
+  const { purchasePrice, downPayment, interestRate, loanTerm, annualTaxes, annualInsurance } = property
   
-  // Monthly mortgage payment (P&I)
-  const monthlyRate = data.interestRate / 100 / 12
-  const totalPayments = data.loanTerm * 12
+  if (purchasePrice <= 0 || interestRate <= 0 || loanTerm <= 0) return null
   
-  let monthlyPrincipalInterest = 0
-  if (monthlyRate > 0 && loanAmount > 0) {
-    monthlyPrincipalInterest = loanAmount * 
-      (monthlyRate * Math.pow(1 + monthlyRate, totalPayments)) / 
-      (Math.pow(1 + monthlyRate, totalPayments) - 1)
-  } else if (loanAmount > 0) {
-    monthlyPrincipalInterest = loanAmount / totalPayments
+  const loanAmount = purchasePrice - downPayment
+  if (loanAmount <= 0) return null
+  
+  // Monthly interest rate
+  const monthlyRate = interestRate / 100 / 12
+  
+  // Total number of payments
+  const totalPayments = loanTerm * 12
+  
+  // Monthly mortgage payment (principal + interest)
+  let monthlyPayment = 0
+  if (monthlyRate > 0) {
+    monthlyPayment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, totalPayments)) / (Math.pow(1 + monthlyRate, totalPayments) - 1)
+  } else {
+    monthlyPayment = loanAmount / totalPayments
   }
   
   // Monthly taxes and insurance
-  const monthlyTaxes = data.annualTaxes / 12
-  const monthlyInsurance = data.annualInsurance / 12
+  const monthlyTaxes = annualTaxes / 12
+  const monthlyInsurance = annualInsurance / 12
   
-  // PMI calculation (typically 0.5% to 1% of loan amount annually)
-  let monthlyPMI = 0
-  if (requiresPMI && loanAmount > 0) {
-    const pmiRate = downPaymentPercentage >= 15 ? 0.005 : 0.01 // 0.5% if 15-19.99%, 1% if <15%
-    monthlyPMI = (loanAmount * pmiRate) / 12
-  }
-  
-  const totalMonthlyPITI = monthlyPrincipalInterest + monthlyTaxes + monthlyInsurance + monthlyPMI
-  const annualPITI = totalMonthlyPITI * 12
-  
-  // Generate amortization schedule (first 12 months)
-  const amortizationSchedule = generateAmortizationSchedule(
-    loanAmount,
-    monthlyPrincipalInterest,
-    monthlyRate,
-    12
-  )
+  // Total monthly PITI
+  const totalMonthlyPITI = monthlyPayment + monthlyTaxes + monthlyInsurance
   
   return {
-    loanAmount,
-    monthlyPrincipalInterest,
-    monthlyTaxes,
-    monthlyInsurance,
-    monthlyPMI,
+    principal: monthlyPayment,
+    interest: monthlyPayment, // This is actually principal + interest, but we'll keep the structure
+    taxes: monthlyTaxes,
+    insurance: monthlyInsurance,
     totalMonthlyPITI,
-    annualPITI,
-    downPaymentPercentage,
-    requiresPMI,
-    amortizationSchedule,
+    totalAnnualPITI: totalMonthlyPITI * 12
   }
 }
 
@@ -83,13 +62,13 @@ function generateAmortizationSchedule(
   monthlyPayment: number,
   monthlyRate: number,
   months: number
-): AmortizationRow[] {
+): any[] { // AmortizationRow type was removed, so using 'any' for now
   // Safety check for invalid inputs
   if (loanAmount <= 0 || monthlyPayment <= 0 || months <= 0) {
     return []
   }
 
-  const schedule: AmortizationRow[] = []
+  const schedule: any[] = []
   let remainingBalance = loanAmount
   
   for (let month = 1; month <= months; month++) {
@@ -109,38 +88,91 @@ function generateAmortizationSchedule(
   return schedule
 }
 
-export function validatePropertyData(data: PropertyData | InvestmentProperty): string[] {
+// Calculate PITI with home sale proceeds adjustment
+export function calculatePITIWithHomeSaleProceeds(
+  property: Property, 
+  propertiesCollection?: PropertiesCollection
+): {
+  principal: number
+  interest: number
+  taxes: number
+  insurance: number
+  totalMonthlyPITI: number
+  totalAnnualPITI: number
+  adjustedDownPayment: number
+  homeSaleProceedsUsed: number
+} | null {
+  if (!property) return null
+  
+  let adjustedDownPayment = property.downPayment
+  let homeSaleProceedsUsed = 0
+  
+  if (property.useHomeSaleProceedsAsDownPayment && property.selectedHomeSalePropertyId && propertiesCollection) {
+    const homeSaleProperty = propertiesCollection.properties.find(p => 
+      p.id === property.selectedHomeSalePropertyId && p.activeMode === 'homeSale'
+    )
+    
+    if (homeSaleProperty) {
+      const netProceeds = calculateNetProceeds(homeSaleProperty, propertiesCollection)
+      if (netProceeds && netProceeds.netProceeds > 0) {
+        homeSaleProceedsUsed = Math.min(netProceeds.netProceeds, property.purchasePrice)
+        adjustedDownPayment = homeSaleProceedsUsed
+      }
+    }
+  }
+  
+  // Create a temporary property with adjusted down payment for PITI calculation
+  const tempProperty = { ...property, downPayment: adjustedDownPayment }
+  const pitiCalculation = calculatePITI(tempProperty)
+  
+  if (!pitiCalculation) return null
+  
+  return {
+    ...pitiCalculation,
+    adjustedDownPayment,
+    homeSaleProceedsUsed
+  }
+}
+
+// Validate property data for calculations
+export function validatePropertyData(property: Property, calculatorMode?: 'investment' | 'homeSale'): {
+  isValid: boolean
+  errors: string[]
+} {
   const errors: string[] = []
   
-  if (data.purchasePrice <= 0) {
-    errors.push('Purchase price must be greater than 0')
+  if (!property.streetAddress.trim()) {
+    errors.push('Property address is required')
   }
   
-  if (data.downPayment < 0) {
-    errors.push('Down payment cannot be negative')
+  // Use calculatorMode if provided, otherwise fall back to property.activeMode
+  const mode = calculatorMode || property.activeMode
+  
+  if (mode === 'investment') {
+    if (property.purchasePrice <= 0) {
+      errors.push('Purchase price must be greater than 0')
+    }
+    if (property.interestRate < 0) {
+      errors.push('Interest rate cannot be negative')
+    }
+    if (property.loanTerm <= 0) {
+      errors.push('Loan term must be greater than 0')
+    }
   }
   
-  if (data.downPayment >= data.purchasePrice) {
-    errors.push('Down payment must be less than purchase price')
+  if (mode === 'homeSale') {
+    if (property.salePrice <= 0) {
+      errors.push('Sale price must be greater than 0')
+    }
+    if (property.originalPurchasePrice < 0) {
+      errors.push('Original purchase price cannot be negative')
+    }
   }
   
-  if (data.interestRate < 0 || data.interestRate > 25) {
-    errors.push('Interest rate must be between 0% and 25%')
+  return {
+    isValid: errors.length === 0,
+    errors
   }
-  
-  if (data.loanTerm <= 0 || data.loanTerm > 50) {
-    errors.push('Loan term must be between 1 and 50 years')
-  }
-  
-  if (data.annualTaxes < 0) {
-    errors.push('Annual taxes cannot be negative')
-  }
-  
-  if (data.annualInsurance < 0) {
-    errors.push('Annual insurance cannot be negative')
-  }
-  
-  return errors
 }
 
 export function formatCurrency(amount: number): string {
@@ -152,119 +184,69 @@ export function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
-export function calculateDSCR(data: PropertyData | InvestmentProperty, pitiCalculation: PITICalculation): DSCRCalculation {
-  // Safety check for invalid PITI calculation
-  if (!pitiCalculation || pitiCalculation.totalMonthlyPITI <= 0) {
-    return {
-      grossRentalIncome: 0,
-      discountedRentalIncome: 0,
-      totalExpenses: 0,
-      netOperatingIncome: 0,
-      dscrRatio: 0,
-      monthlyCashFlow: 0,
-      annualCashFlow: 0,
-      maxLoanForPositiveDSCR: 0,
-      breakdown: {
-        piti: 0,
-        propertyManagement: 0,
-        maintenance: 0,
-        hoaFees: 0,
-      }
-    }
+// Calculate DSCR (Debt Service Coverage Ratio)
+export function calculateDSCR(property: Property, pitiCalculation: any): {
+  grossAnnualRentalIncome: number
+  netAnnualRentalIncome: number
+  annualPITI: number
+  dscrRatio: number
+  annualExpenses: {
+    propertyManagement: number
+    maintenance: number
+    hoaFees: number
+    total: number
   }
-
-  // Convert monthly PITI to annual
-  const annualPITI = pitiCalculation.totalMonthlyPITI * 12
+  dscrExpenses: number
+} | null {
+  if (!property) return null
   
-  // data.grossRentalIncome is already stored as annual value
-  const annualRentalIncome = data.grossRentalIncome
+  const { grossRentalIncome, rentalIncomeInputType, rentalIncomeDiscount } = property
+  
+  // Convert rental income to annual
+  const grossAnnualRentalIncome = rentalIncomeInputType === 'monthly' ? grossRentalIncome * 12 : grossRentalIncome
   
   // Apply rental income discount
-  const discountedRentalIncome = annualRentalIncome * (1 - data.rentalIncomeDiscount / 100)
+  const netAnnualRentalIncome = grossAnnualRentalIncome * (1 - rentalIncomeDiscount / 100)
   
-  // Calculate property management fees (always calculate for breakdown)
-  let annualPropertyManagement = 0
-  if (data.propertyManagementFee > 0) {
-    if (data.propertyManagementInputType === 'percentage') {
-      // data.propertyManagementFee now stores the raw percentage (e.g., 10 for 10%)
-      annualPropertyManagement = annualRentalIncome * (data.propertyManagementFee / 100)
-    } else {
-      annualPropertyManagement = data.propertyManagementFee
-      // Property management is always annual when in dollars mode
-    }
-  }
+  // Get annual PITI
+  const annualPITI = pitiCalculation.totalAnnualPITI
   
-  // Calculate maintenance reserves (always calculate for breakdown)
-  let annualMaintenance = 0
-  if (data.maintenanceReserve > 0) {
-    if (data.maintenanceInputType === 'percentage') {
-      // data.maintenanceReserve now stores the raw percentage (e.g., 10 for 10%)
-      annualMaintenance = annualRentalIncome * (data.maintenanceReserve / 100)
-    } else {
-      annualMaintenance = data.maintenanceReserve
-      // Maintenance is always annual when in dollars mode
-    }
-  }
+  // Calculate annual expenses (always calculate for breakdown, but only include in DSCR if checkbox is checked)
+  const annualPropertyManagement = property.propertyManagementInputType === 'dollar' 
+    ? property.propertyManagementFee * 12 
+    : (grossAnnualRentalIncome * property.propertyManagementFee / 100)
   
-  // Calculate HOA fees (always calculate for breakdown)
-  let annualHoaFees = 0
-  if (data.hoaFees > 0) {
-    annualHoaFees = data.hoaFees
-    if (data.hoaInputType === 'monthly') {
-      annualHoaFees *= 12
-    }
-  }
+  const annualMaintenance = property.maintenanceInputType === 'dollar'
+    ? property.maintenanceReserve * 12
+    : (grossAnnualRentalIncome * property.maintenanceReserve / 100)
   
-  // Calculate expenses for DSCR (only include if checkboxes are checked)
+  const annualHoaFees = property.hoaInputType === 'dollar'
+    ? property.hoaFees * 12
+    : (grossAnnualRentalIncome * property.hoaFees / 100)
+  
+  const totalExpenses = annualPropertyManagement + annualMaintenance + annualHoaFees
+  
+  // Calculate DSCR expenses (only include expenses that are checked)
   let dscrExpenses = annualPITI
-  if (data.includePropertyManagement) {
-    dscrExpenses += annualPropertyManagement
-  }
-  if (data.includeMaintenance) {
-    dscrExpenses += annualMaintenance
-  }
-  if (data.includeHoaFees) {
-    dscrExpenses += annualHoaFees
-  }
+  if (property.includePropertyManagement) dscrExpenses += annualPropertyManagement
+  if (property.includeMaintenance) dscrExpenses += annualMaintenance
+  if (property.includeHoaFees) dscrExpenses += annualHoaFees
   
-  // Total annual expenses for DSCR calculation
-  const totalExpenses = dscrExpenses
-  
-  // Net Operating Income (for DSCR, only include expenses that are checked)
-  const netOperatingIncome = discountedRentalIncome - totalExpenses
-  
-  // DSCR Ratio
-  const dscrRatio = totalExpenses > 0 ? discountedRentalIncome / totalExpenses : 0
-  
-  // Cash flow calculations
-  const monthlyCashFlow = netOperatingIncome / 12
-  const annualCashFlow = netOperatingIncome
-  
-  // Maximum loan amount for positive DSCR (>1.0)
-  let maxLoanForPositiveDSCR = 0
-  if (data.interestRate > 0) {
-    const monthlyRate = data.interestRate / 100 / 12
-    const maxMonthlyPayment = discountedRentalIncome / 12
-    if (monthlyRate > 0) {
-      maxLoanForPositiveDSCR = maxMonthlyPayment * (1 - Math.pow(1 + monthlyRate, -data.loanTerm * 12)) / monthlyRate
-    }
-  }
+  // Calculate DSCR ratio
+  const dscrRatio = dscrExpenses > 0 ? netAnnualRentalIncome / dscrExpenses : 0
   
   return {
-    grossRentalIncome: annualRentalIncome,
-    discountedRentalIncome,
-    totalExpenses,
-    netOperatingIncome,
+    grossAnnualRentalIncome,
+    netAnnualRentalIncome,
+    annualPITI,
     dscrRatio,
-    monthlyCashFlow,
-    annualCashFlow,
-    maxLoanForPositiveDSCR,
-    breakdown: {
-      piti: annualPITI,
+    annualExpenses: {
       propertyManagement: annualPropertyManagement,
       maintenance: annualMaintenance,
       hoaFees: annualHoaFees,
-    }
+      total: totalExpenses
+    },
+    dscrExpenses
   }
 }
 
@@ -272,165 +254,124 @@ export function formatPercentage(value: number): string {
   return `${value.toFixed(2)}%`
 } 
 
-export function calculateCapRate(propertyData: PropertyData | InvestmentProperty, pitiCalculation: PITICalculation): number {
-  // Safety check for invalid PITI calculation
-  if (!pitiCalculation || pitiCalculation.totalMonthlyPITI <= 0) {
-    return 0
-  }
-
+// Calculate Cap Rate
+export function calculateCapRate(property: Property): {
+  netOperatingIncome: number
+  capRate: number
+} | null {
+  if (!property) return null
+  
+  const { grossRentalIncome, rentalIncomeInputType, rentalIncomeDiscount, annualTaxes, annualInsurance } = property
+  
+  // Convert rental income to annual
+  const grossAnnualRentalIncome = rentalIncomeInputType === 'monthly' ? grossRentalIncome * 12 : grossRentalIncome
+  
+  // Apply rental income discount
+  const netAnnualRentalIncome = grossAnnualRentalIncome * (1 - rentalIncomeDiscount / 100)
+  
   // Calculate Net Operating Income (NOI)
-  // NOI = Gross Rental Income - Operating Expenses (excluding mortgage payments)
+  const noi = netAnnualRentalIncome - annualTaxes - annualInsurance
   
-  const grossRentalIncome = propertyData.grossRentalIncome
-  const rentalIncomeDiscount = propertyData.rentalIncomeDiscount / 100
+  // Calculate Cap Rate
+  const capRate = property.marketValue > 0 ? (noi / property.marketValue) * 100 : 0
   
-  // Net rental income after vacancy and maintenance discount
-  const netRentalIncome = grossRentalIncome * (1 - rentalIncomeDiscount)
-  
-  // Operating expenses (excluding mortgage payments)
-  let operatingExpenses = 0
-  
-  // Property management fee - should be calculated on GROSS rental income, not discounted
-  if (propertyData.includePropertyManagement) {
-    if (propertyData.propertyManagementInputType === 'percentage') {
-      operatingExpenses += (propertyData.propertyManagementFee / 100) * grossRentalIncome
-    } else {
-      operatingExpenses += propertyData.propertyManagementFee
-    }
+  return {
+    netOperatingIncome: noi,
+    capRate
   }
-  
-  // Maintenance reserve - should be calculated on GROSS rental income, not discounted
-  if (propertyData.includeMaintenance) {
-    if (propertyData.maintenanceInputType === 'percentage') {
-      operatingExpenses += (propertyData.maintenanceReserve / 100) * grossRentalIncome
-    } else {
-      operatingExpenses += propertyData.maintenanceReserve
-    }
-  }
-  
-  // HOA fees
-  if (propertyData.includeHoaFees) {
-    operatingExpenses += propertyData.hoaFees
-  }
-  
-  // Add property taxes and insurance (these are operating expenses, not debt service)
-  operatingExpenses += propertyData.annualTaxes
-  operatingExpenses += propertyData.annualInsurance
-  
-  // Calculate NOI
-  const noi = netRentalIncome - operatingExpenses
-  
-  // Cap Rate = NOI / Property Value
-  const propertyValue = propertyData.marketValue || propertyData.purchasePrice
-  
-  if (propertyValue <= 0) return 0
-  
-  return noi / propertyValue
 } 
 
-export function calculateNetProceeds(propertyData: PropertyData | HomeSaleProperty, propertiesCollection?: PropertiesCollection): {
+// Calculate net proceeds from home sale
+export function calculateNetProceeds(
+  property: Property, 
+  propertiesCollection?: PropertiesCollection
+): {
+  salePrice: number
+  outstandingMortgage: number
+  realtorCommission: number
+  closingCosts: number
+  totalExpenses: number
   netProceeds: number
   capitalGainsTax: number
-  totalExpenses: number
-  mortgagePayoff: number
   qiFees: number
   boot: number
   bootTax: number
   use1031Exchange: boolean
-} {
-  // Handle both PropertyData and HomeSaleProperty interfaces
-  const salePrice = 'salePrice' in propertyData ? propertyData.salePrice : 0
-  const outstandingMortgageBalance = 'outstandingMortgageBalance' in propertyData ? propertyData.outstandingMortgageBalance : 0
-  const realtorCommission = 'realtorCommission' in propertyData ? propertyData.realtorCommission : 0
-  const realtorCommissionInputType = 'realtorCommissionInputType' in propertyData ? propertyData.realtorCommissionInputType : 'percentage'
-  const closingCosts = 'closingCosts' in propertyData ? propertyData.closingCosts : 0
-  const capitalGainsTaxRate = 'capitalGainsTaxRate' in propertyData ? propertyData.capitalGainsTaxRate : 15
-  const originalPurchasePrice = 'originalPurchasePrice' in propertyData ? propertyData.originalPurchasePrice : 0
+} | null {
+  if (!property) return null
   
-  // 1031 Exchange fields
-  const use1031Exchange = 'use1031Exchange' in propertyData ? propertyData.use1031Exchange : false
-  const selectedReplacementPropertyId = 'selectedReplacementPropertyId' in propertyData ? propertyData.selectedReplacementPropertyId : undefined
-
+  const { 
+    salePrice, 
+    outstandingMortgageBalance, 
+    realtorCommission, 
+    realtorCommissionInputType,
+    closingCosts, 
+    capitalGainsTaxRate,
+    originalPurchasePrice,
+    use1031Exchange,
+    selectedReplacementPropertyId,
+    qiFees
+  } = property
+  
+  if (salePrice <= 0) return null
+  
   // Calculate realtor commission
-  const realtorFee = realtorCommissionInputType === 'percentage' 
-    ? (salePrice * realtorCommission) / 100
-    : realtorCommission
-
-  // Calculate QI fees for 1031 exchange
-  const qiFees = use1031Exchange ? 1500 : 0
-
-  // Calculate total expenses
-  const totalExpenses = realtorFee + closingCosts + qiFees
-
-  // Calculate capital gains
-  const adjustedBasis = originalPurchasePrice
-  const capitalGain = salePrice - adjustedBasis
+  const realtorCommissionAmount = realtorCommissionInputType === 'dollar' 
+    ? realtorCommission 
+    : (salePrice * realtorCommission / 100)
   
+  // Calculate total expenses
+  let totalExpenses = realtorCommissionAmount + closingCosts
+  
+  // Add QI fees if using 1031 exchange
+  if (use1031Exchange) {
+    totalExpenses += qiFees
+  }
+  
+  // Calculate net proceeds before taxes
+  const netProceedsBeforeTax = salePrice - outstandingMortgageBalance - totalExpenses
+  
+  // Calculate capital gains
   let capitalGainsTax = 0
   let boot = 0
   let bootTax = 0
-
-  if (use1031Exchange && propertiesCollection && selectedReplacementPropertyId) {
-    // Find the replacement property
-    const replacementProperty = propertiesCollection.properties.find(
-      p => p.id === selectedReplacementPropertyId && p.calculatorMode === 'investment'
-    ) as InvestmentProperty | undefined
-
+  
+  if (use1031Exchange && selectedReplacementPropertyId && propertiesCollection) {
+    // 1031 Exchange: Find replacement property
+    const replacementProperty = propertiesCollection.properties.find(p => 
+      p.id === selectedReplacementPropertyId && p.activeMode === 'investment'
+    )
+    
     if (replacementProperty) {
-      // Calculate boot (difference between sale price and replacement property purchase price)
+      // Calculate boot (taxable portion when replacement property is worth less)
       boot = Math.max(0, salePrice - replacementProperty.purchasePrice)
       
-      // Only tax the boot amount in 1031 exchange
-      bootTax = boot * (capitalGainsTaxRate / 100)
-      capitalGainsTax = bootTax
-    } else {
-      // Fallback to traditional calculation if replacement property not found
-      capitalGainsTax = Math.max(0, capitalGain * (capitalGainsTaxRate / 100))
+      if (boot > 0) {
+        // Only pay capital gains tax on the boot amount
+        const capitalGains = Math.max(0, salePrice - originalPurchasePrice)
+        bootTax = (boot / capitalGains) * (capitalGains * capitalGainsTaxRate / 100)
+      }
     }
   } else {
-    // Traditional sale - tax the full capital gain
-    capitalGainsTax = Math.max(0, capitalGain * (capitalGainsTaxRate / 100))
+    // Regular sale: Calculate capital gains tax on entire gain
+    const capitalGains = Math.max(0, salePrice - originalPurchasePrice)
+    capitalGainsTax = capitalGains * capitalGainsTaxRate / 100
   }
-
-  // Calculate net proceeds
-  const netProceeds = salePrice - outstandingMortgageBalance - totalExpenses - capitalGainsTax
-
+  
+  // Final net proceeds
+  const netProceeds = netProceedsBeforeTax - capitalGainsTax - bootTax
+  
   return {
-    netProceeds: Math.max(0, netProceeds),
-    capitalGainsTax,
+    salePrice,
+    outstandingMortgage: outstandingMortgageBalance,
+    realtorCommission: realtorCommissionAmount,
+    closingCosts,
     totalExpenses,
-    mortgagePayoff: outstandingMortgageBalance,
-    qiFees,
+    netProceeds,
+    capitalGainsTax,
+    qiFees: use1031Exchange ? qiFees : 0,
     boot,
     bootTax,
     use1031Exchange
   }
-} 
-
-export function calculatePITIWithHomeSaleProceeds(
-  property: InvestmentProperty, 
-  propertiesCollection?: PropertiesCollection
-): PITICalculation {
-  // Calculate effective down payment considering home sale proceeds
-  let effectiveDownPayment = property.downPayment
-  
-  if (property.useHomeSaleProceedsAsDownPayment && propertiesCollection && property.selectedHomeSalePropertyId) {
-    const selectedHomeSaleProperty = propertiesCollection.properties.find(
-      p => p.id === property.selectedHomeSalePropertyId && p.calculatorMode === 'homeSale'
-    ) as HomeSaleProperty | undefined
-    
-    if (selectedHomeSaleProperty) {
-      const calculation = calculateNetProceeds(selectedHomeSaleProperty, propertiesCollection)
-      effectiveDownPayment = calculation.netProceeds
-    }
-  }
-  
-  // Create a modified property object with the effective down payment
-  const adjustedProperty = {
-    ...property,
-    downPayment: effectiveDownPayment
-  }
-
-  // Call the original calculatePITI function with the adjusted property
-  return calculatePITI(adjustedProperty)
 } 

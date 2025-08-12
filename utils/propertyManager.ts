@@ -1,152 +1,237 @@
-import { Property, HomeSaleProperty, InvestmentProperty, PropertiesCollection } from '../types/property'
+import { Property, PropertiesCollection } from '@/types/property'
 
-const STORAGE_KEY = 'homecalcs-properties'
-
-// Create a new home sale property
-export function createHomeSaleProperty(name: string, streetAddress: string): HomeSaleProperty {
+// Create a new property with default values
+export function createProperty(
+  name: string, 
+  streetAddress: string, 
+  initialMode: 'investment' | 'homeSale' = 'investment'
+): Property {
+  const now = new Date().toISOString()
+  
   return {
     id: generateId(),
     name,
     streetAddress,
-    salePrice: 0,
-    outstandingMortgageBalance: 0,
-    realtorCommission: 5,
-    realtorCommissionInputType: 'percentage',
-    closingCosts: 0,
-    capitalGainsTaxRate: 15,
-    originalPurchasePrice: 0,
-    use1031Exchange: false,
-    selectedReplacementPropertyId: null,
-    calculatorMode: 'homeSale'
-  }
-}
-
-// Create a new investment property
-export function createInvestmentProperty(name: string, streetAddress: string): InvestmentProperty {
-  return {
-    id: generateId(),
-    name,
-    streetAddress,
+    lastUpdated: now,
+    
+    // Shared property details
     purchasePrice: 0,
-    downPayment: 0,
-    interestRate: 7,
+    originalPurchasePrice: 0,
+    yearBuilt: undefined,
+    propertyType: 'single-family',
+    
+    // Mortgage details
+    outstandingMortgageBalance: 0,
+    interestRate: 0,
     loanTerm: 30,
+    
+    // Tax and insurance
     annualTaxes: 0,
     annualInsurance: 0,
+    taxInputType: 'dollar',
+    insuranceInputType: 'dollar',
+    
+    // Market value
     marketValue: 0,
-    propertyType: 'single-family',
-    yearBuilt: 2024,
-    taxInputType: 'annual',
-    insuranceInputType: 'annual',
-    downPaymentInputType: 'dollars',
+    
+    // Calculator modes
+    supportedModes: [initialMode],
+    activeMode: initialMode,
+    
+    // Investment data
     grossRentalIncome: 0,
     rentalIncomeInputType: 'monthly',
     rentalIncomeDiscount: 0,
     propertyManagementFee: 0,
-    propertyManagementInputType: 'percentage',
+    propertyManagementInputType: 'dollar',
     includePropertyManagement: false,
     maintenanceReserve: 0,
-    maintenanceInputType: 'percentage',
+    maintenanceInputType: 'dollar',
     includeMaintenance: false,
     hoaFees: 0,
-    hoaInputType: 'monthly',
+    hoaInputType: 'dollar',
     includeHoaFees: false,
+    downPayment: 0,
+    downPaymentInputType: 'dollar',
     useHomeSaleProceedsAsDownPayment: false,
     selectedHomeSalePropertyId: null,
-    calculatorMode: 'investment'
+    
+    // Home sale data
+    salePrice: 0,
+    realtorCommission: 0,
+    realtorCommissionInputType: 'dollar',
+    closingCosts: 0,
+    capitalGainsTaxRate: 0.15,
+    use1031Exchange: false,
+    selectedReplacementPropertyId: null,
+    qiFees: 1500, // Default QI fee
   }
 }
 
-// Load properties from localStorage
-export function loadProperties(): PropertiesCollection {
-  if (typeof window === 'undefined') {
-    return { properties: [], activePropertyId: null }
-  }
+// Create investment property (legacy function for backward compatibility)
+export function createInvestmentProperty(name: string, streetAddress: string): Property {
+  return createProperty(name, streetAddress, 'investment')
+}
 
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
-      return JSON.parse(stored)
+// Create home sale property (legacy function for backward compatibility)
+export function createHomeSaleProperty(name: string, streetAddress: string): Property {
+  return createProperty(name, streetAddress, 'homeSale')
+}
+
+// Add a new calculator mode to an existing property
+export function addCalculatorMode(property: Property, mode: 'investment' | 'homeSale'): Property {
+  if (!property || !property.supportedModes) {
+    // If property doesn't have supportedModes, initialize it
+    return {
+      ...property,
+      supportedModes: [mode],
+      activeMode: mode
     }
-  } catch (error) {
-    console.error('Error loading properties:', error)
   }
-
-  return { properties: [], activePropertyId: null }
-}
-
-// Save properties to localStorage
-export function saveProperties(properties: PropertiesCollection): void {
-  if (typeof window === 'undefined') return
-
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(properties))
-  } catch (error) {
-    console.error('Error saving properties:', error)
-  }
-}
-
-// Add a new property to the collection
-export function addProperty(
-  properties: PropertiesCollection,
-  property: Property
-): PropertiesCollection {
-  return {
-    properties: [...properties.properties, property],
-    activePropertyId: property.id
-  }
-}
-
-// Update an existing property
-export function updateProperty(
-  properties: PropertiesCollection,
-  updatedProperty: Property
-): PropertiesCollection {
-  return {
-    ...properties,
-    properties: properties.properties.map(p => 
-      p.id === updatedProperty.id ? updatedProperty : p
-    )
-  }
-}
-
-// Delete a property
-export function deleteProperty(
-  properties: PropertiesCollection,
-  propertyId: string
-): PropertiesCollection {
-  const newProperties = properties.properties.filter(p => p.id !== propertyId)
-  let newActiveId = properties.activePropertyId
   
-  // If we deleted the active property, set active to first available or null
-  if (properties.activePropertyId === propertyId) {
-    newActiveId = newProperties.length > 0 ? newProperties[0].id : null
+  if (!property.supportedModes.includes(mode)) {
+    return {
+      ...property,
+      supportedModes: [...property.supportedModes, mode]
+    }
   }
-
-  return {
-    properties: newProperties,
-    activePropertyId: newActiveId
-  }
+  return property
 }
 
-// Set active property
-export function setActiveProperty(
-  properties: PropertiesCollection,
-  propertyId: string | null
-): PropertiesCollection {
-  return {
-    ...properties,
-    activePropertyId: propertyId
+// Switch calculator mode for a property
+export function switchCalculatorMode(property: Property, mode: 'investment' | 'homeSale'): Property {
+  if (!property || !property.supportedModes) {
+    // If property doesn't have supportedModes, initialize it
+    return {
+      ...property,
+      supportedModes: [mode],
+      activeMode: mode
+    }
   }
+  
+  if (property.supportedModes.includes(mode)) {
+    return {
+      ...property,
+      activeMode: mode
+    }
+  }
+  return property
 }
 
-// Get active property
-export function getActiveProperty(properties: PropertiesCollection): Property | null {
-  if (!properties.activePropertyId) return null
-  return properties.properties.find(p => p.id === properties.activePropertyId) || null
+// Check if property supports a specific calculator mode
+export function supportsCalculatorMode(property: Property, mode: 'investment' | 'homeSale'): boolean {
+  if (!property || !property.supportedModes) {
+    return false
+  }
+  return property.supportedModes.includes(mode)
 }
 
 // Generate unique ID
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2)
+}
+
+// Load properties from localStorage (fallback)
+export function loadProperties(): PropertiesCollection {
+  if (typeof window === 'undefined') {
+    return { properties: [], activePropertyId: null }
+  }
+  
+  try {
+    const stored = localStorage.getItem('properties')
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      // Handle legacy data structure during transition
+      if (parsed.properties && Array.isArray(parsed.properties)) {
+        const migratedProperties = parsed.properties.map((p: any) => {
+          // Migrate all properties to new structure to ensure they have required fields
+          return migrateLegacyProperty(p)
+        })
+        return {
+          properties: migratedProperties,
+          activePropertyId: parsed.activePropertyId
+        }
+      }
+      return parsed
+    }
+  } catch (error) {
+    console.error('Failed to load properties from localStorage:', error)
+  }
+  
+  return { properties: [], activePropertyId: null }
+}
+
+// Save properties to localStorage (fallback)
+export function saveProperties(propertiesCollection: PropertiesCollection): void {
+  if (typeof window === 'undefined') return
+  
+  try {
+    localStorage.setItem('properties', JSON.stringify(propertiesCollection))
+  } catch (error) {
+    console.error('Failed to save properties to localStorage:', error)
+  }
+}
+
+// Migrate legacy property to new unified structure
+function migrateLegacyProperty(legacyProperty: any): Property {
+  const now = new Date().toISOString()
+  
+  return {
+    id: legacyProperty.id,
+    name: legacyProperty.name,
+    streetAddress: legacyProperty.streetAddress,
+    lastUpdated: now,
+    
+    // Shared property details
+    purchasePrice: legacyProperty.purchasePrice || 0,
+    originalPurchasePrice: legacyProperty.originalPurchasePrice || 0,
+    yearBuilt: legacyProperty.yearBuilt,
+    propertyType: legacyProperty.propertyType || 'single-family',
+    
+    // Mortgage details
+    outstandingMortgageBalance: legacyProperty.outstandingMortgageBalance || 0,
+    interestRate: legacyProperty.interestRate || 0,
+    loanTerm: legacyProperty.loanTerm || 30,
+    
+    // Tax and insurance
+    annualTaxes: legacyProperty.annualTaxes || 0,
+    annualInsurance: legacyProperty.annualInsurance || 0,
+    taxInputType: legacyProperty.taxInputType || 'dollar',
+    insuranceInputType: legacyProperty.insuranceInputType || 'dollar',
+    
+    // Market value
+    marketValue: legacyProperty.marketValue || 0,
+    
+    // Calculator modes
+    supportedModes: [legacyProperty.calculatorMode || 'investment'],
+    activeMode: legacyProperty.calculatorMode || 'investment',
+    
+    // Investment data
+    grossRentalIncome: legacyProperty.grossRentalIncome || 0,
+    rentalIncomeInputType: legacyProperty.rentalIncomeInputType || 'monthly',
+    rentalIncomeDiscount: legacyProperty.rentalIncomeDiscount || 0,
+    propertyManagementFee: legacyProperty.propertyManagementFee || 0,
+    propertyManagementInputType: legacyProperty.propertyManagementInputType || 'dollar',
+    includePropertyManagement: legacyProperty.includePropertyManagement || false,
+    maintenanceReserve: legacyProperty.maintenanceReserve || 0,
+    maintenanceInputType: legacyProperty.maintenanceInputType || 'dollar',
+    includeMaintenance: legacyProperty.includeMaintenance || false,
+    hoaFees: legacyProperty.hoaFees || 0,
+    hoaInputType: legacyProperty.hoaInputType || 'dollar',
+    includeHoaFees: legacyProperty.includeHoaFees || false,
+    downPayment: legacyProperty.downPayment || 0,
+    downPaymentInputType: legacyProperty.downPaymentInputType || 'dollar',
+    useHomeSaleProceedsAsDownPayment: legacyProperty.useHomeSaleProceedsAsDownPayment || false,
+    selectedHomeSalePropertyId: legacyProperty.selectedHomeSalePropertyId || null,
+    
+    // Home sale data
+    salePrice: legacyProperty.salePrice || 0,
+    realtorCommission: legacyProperty.realtorCommission || 0,
+    realtorCommissionInputType: legacyProperty.realtorCommissionInputType || 'dollar',
+    closingCosts: legacyProperty.closingCosts || 0,
+    capitalGainsTaxRate: legacyProperty.capitalGainsTaxRate || 0.15,
+    use1031Exchange: legacyProperty.use1031Exchange || false,
+    selectedReplacementPropertyId: legacyProperty.selectedReplacementPropertyId || null,
+    qiFees: legacyProperty.qiFees || 1500,
+  }
 }

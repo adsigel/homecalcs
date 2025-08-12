@@ -1,45 +1,60 @@
 'use client'
 
 import React, { useMemo, useState } from 'react'
-import { InvestmentProperty, DSCRCalculation, PITICalculation } from '@/types/property'
+import { Property } from '@/types/property'
 import { calculateDSCR, calculateCapRate, formatCurrency, formatPercentage, formatNumber } from '@/utils/calculations'
 import { Calculator, DollarSign, TrendingUp, AlertTriangle, Building2, Wrench, Home, Calendar, Clock, Percent } from 'lucide-react'
 
 interface DSCRCalculatorProps {
-  property: InvestmentProperty
-  onUpdate: (updates: Partial<InvestmentProperty>) => void
+  property: Property
+  onUpdate: (updates: Partial<Property>) => void
+  calculatorMode: 'investment' | 'homeSale'
 }
 
-export default function DSCRCalculator({ property, onUpdate }: DSCRCalculatorProps) {
+export default function DSCRCalculator({ property, onUpdate, calculatorMode }: DSCRCalculatorProps) {
+  // Only show for investment mode
+  if (calculatorMode !== 'investment') return null
+  
+  console.log('🔍 DSCRCalculator render - property:', property)
+  console.log('🔍 DSCRCalculator render - property.activeMode:', property.activeMode)
+  console.log('🔍 DSCRCalculator render - calculatorMode:', calculatorMode)
+  
   const [expenseViewMode, setExpenseViewMode] = useState<'annual' | 'monthly'>('annual')
   
   // Calculate PITI internally for DSCR calculations
   const pitiCalculation = useMemo(() => {
+    console.log('🧮 DSCR - Calculating PITI for property:', property)
     // Import and use the calculation function directly
     const { calculatePITIWithHomeSaleProceeds } = require('@/utils/calculations')
-    return calculatePITIWithHomeSaleProceeds(property, undefined)
+    const result = calculatePITIWithHomeSaleProceeds(property, undefined)
+    console.log('🧮 DSCR - PITI calculation result:', result)
+    return result
   }, [property])
   
   // Only calculate DSCR if we have valid PITI data
   const dscrCalculation = useMemo(() => {
+    console.log('🧮 DSCR - Calculating DSCR with PITI:', pitiCalculation)
     if (pitiCalculation && pitiCalculation.totalMonthlyPITI > 0) {
-      return calculateDSCR(property, pitiCalculation)
+      const result = calculateDSCR(property, pitiCalculation)
+      console.log('🧮 DSCR - DSCR calculation result:', result)
+      return result
     }
+    console.log('🧮 DSCR - No valid PITI data for DSCR calculation')
     return undefined
   }, [property, pitiCalculation])
   
   const capRate = useMemo(() => {
     if (pitiCalculation && pitiCalculation.totalMonthlyPITI > 0) {
-      return calculateCapRate(property, pitiCalculation)
+      return calculateCapRate(property)
     }
-    return 0
+    return null
   }, [property, pitiCalculation])
 
   const hasValidInputs = property.grossRentalIncome > 0 && pitiCalculation?.totalMonthlyPITI && pitiCalculation.totalMonthlyPITI > 0
-
-  // Helper function to convert annual to monthly
-  const toMonthly = (annualValue: number) => annualValue / 12
-  const toAnnual = (monthlyValue: number) => monthlyValue * 12
+  
+  console.log('🔍 DSCRCalculator - hasValidInputs:', hasValidInputs)
+  console.log('🔍 DSCRCalculator - pitiCalculation:', pitiCalculation)
+  console.log('🔍 DSCRCalculator - dscrCalculation:', dscrCalculation)
 
   return (
     <div className="space-y-6">
@@ -84,7 +99,7 @@ export default function DSCRCalculator({ property, onUpdate }: DSCRCalculatorPro
             <div className="space-y-4">
               <div className="bg-white p-4 rounded-lg border border-blue-200">
                 <div className="text-2xl font-bold text-blue-600">
-                  {formatPercentage(capRate * 100)}
+                  {capRate ? formatPercentage(capRate.capRate) : '0%'}
                 </div>
                 <div className="text-sm text-blue-600">Cap Rate</div>
                 <div className="text-xs text-gray-500 mt-1">
@@ -97,44 +112,30 @@ export default function DSCRCalculator({ property, onUpdate }: DSCRCalculatorPro
             <div className="space-y-4">
               <div className="bg-white p-4 rounded-lg border border-green-200">
                 <div className={`text-lg font-semibold ${
-                  dscrCalculation.monthlyCashFlow >= 0 ? 'text-green-600' : 'text-red-600'
+                  (dscrCalculation.netAnnualRentalIncome - dscrCalculation.dscrExpenses) >= 0 ? 'text-green-600' : 'text-red-600'
                 }`}>
-                  {formatCurrency(dscrCalculation.monthlyCashFlow)}
+                  {formatCurrency((dscrCalculation.netAnnualRentalIncome - dscrCalculation.dscrExpenses) / 12)}
                 </div>
                 <div className="text-sm text-green-600">Monthly Cash Flow</div>
                 <div className="text-xs text-gray-500 mt-1">
-                  After all expenses
+                  Net Income - Expenses
                 </div>
               </div>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Additional Metrics Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Annual Cash Flow:</span>
-                <span className={`font-medium ${
-                  dscrCalculation.annualCashFlow >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {formatCurrency(dscrCalculation.annualCashFlow)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Total Annual Expenses:</span>
-                <span className="font-medium">{formatCurrency(dscrCalculation.totalExpenses)}</span>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Gross Rental Income:</span>
-                <span className="font-medium">{formatCurrency(dscrCalculation.grossRentalIncome)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Net Operating Income:</span>
-                <span className="font-medium">{formatCurrency(dscrCalculation.grossRentalIncome * (1 - property.rentalIncomeDiscount / 100) - (dscrCalculation.totalExpenses - dscrCalculation.breakdown.piti))}</span>
-              </div>
+      {/* Input Validation Warning */}
+      {!hasValidInputs && (
+        <div className="card border-l-4 border-warning-500 bg-warning-50">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-warning-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <h3 className="font-medium text-warning-800">Complete Required Fields</h3>
+              <p className="text-sm text-warning-700 mt-1">
+                Please enter rental income and complete PITI calculations to see DSCR analysis.
+              </p>
             </div>
           </div>
         </div>
@@ -144,144 +145,150 @@ export default function DSCRCalculator({ property, onUpdate }: DSCRCalculatorPro
       {hasValidInputs && dscrCalculation && (
         <div className="card">
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-primary-600" />
-                Expense Breakdown
-              </h3>
-              <p className="text-sm text-gray-500 mt-1">
-                {expenseViewMode === 'annual' ? 'Annual expenses' : 'Monthly expenses (annual ÷ 12)'}
-              </p>
-            </div>
-
-            {/* Toggle Button */}
-            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+            <h3 className="text-lg font-semibold text-gray-900">Expense Breakdown</h3>
+            <div className="flex space-x-2">
               <button
                 onClick={() => setExpenseViewMode('annual')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-1 ${
+                className={`px-3 py-1 text-sm rounded-md transition-colors ${
                   expenseViewMode === 'annual'
-                    ? 'bg-white text-primary-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
-                <Calendar className="w-4 h-4" />
                 Annual
               </button>
               <button
                 onClick={() => setExpenseViewMode('monthly')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-1 ${
+                className={`px-3 py-1 text-sm rounded-md transition-colors ${
                   expenseViewMode === 'monthly'
-                    ? 'bg-white text-primary-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
-                <Clock className="w-4 h-4" />
                 Monthly
               </button>
             </div>
           </div>
 
-          <div className="space-y-3">
-            <div className="flex justify-between py-2 border-b border-gray-200">
-              <span className="text-gray-600">PITI Payments:</span>
-              <span className="font-medium">
-                {expenseViewMode === 'annual'
-                  ? formatCurrency(dscrCalculation.breakdown.piti)
-                  : formatCurrency(toMonthly(dscrCalculation.breakdown.piti))
-                }
-              </span>
+          <div className="space-y-4">
+            {/* PITI Expenses */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-primary-600" />
+                PITI Expenses
+              </h4>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Principal & Interest:</span>
+                  <span className="font-medium">
+                    {expenseViewMode === 'annual' 
+                      ? formatCurrency(dscrCalculation.annualPITI)
+                      : formatCurrency(dscrCalculation.annualPITI / 12)
+                    }
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Property Taxes:</span>
+                  <span className="font-medium">
+                    {expenseViewMode === 'annual' 
+                      ? formatCurrency(property.annualTaxes)
+                      : formatCurrency(property.annualTaxes / 12)
+                    }
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Insurance:</span>
+                  <span className="font-medium">
+                    {expenseViewMode === 'annual' 
+                      ? formatCurrency(property.annualInsurance)
+                      : formatCurrency(property.annualInsurance / 12)
+                    }
+                  </span>
+                </div>
+              </div>
             </div>
 
-            {dscrCalculation.breakdown.propertyManagement > 0 && (
-              <div className="flex justify-between py-2 border-b border-gray-200">
-                <span className="text-gray-600">Property Management:</span>
-                <span className="font-medium">
-                  {expenseViewMode === 'annual'
-                    ? formatCurrency(dscrCalculation.breakdown.propertyManagement)
-                    : formatCurrency(toMonthly(dscrCalculation.breakdown.propertyManagement))
+            {/* Operating Expenses */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                <Wrench className="w-4 h-4 text-primary-600" />
+                Operating Expenses
+              </h4>
+              <div className="space-y-3">
+                {/* Property Management */}
+                {dscrCalculation.annualExpenses.propertyManagement > 0 && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-600">Property Management</span>
+                      <div className={`w-3 h-3 rounded-full ${
+                        property.includePropertyManagement ? 'bg-green-500' : 'bg-gray-300'
+                      }`} title={property.includePropertyManagement ? 'Included in DSCR' : 'Not included in DSCR'}></div>
+                    </div>
+                    <span className="font-medium">
+                      {expenseViewMode === 'annual' 
+                        ? formatCurrency(dscrCalculation.annualExpenses.propertyManagement)
+                        : formatCurrency(dscrCalculation.annualExpenses.propertyManagement / 12)
+                      }
+                    </span>
+                  </div>
+                )}
+
+                {/* Maintenance */}
+                {dscrCalculation.annualExpenses.maintenance > 0 && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-600">Maintenance Reserve</span>
+                      <div className={`w-3 h-3 rounded-full ${
+                        property.includeMaintenance ? 'bg-green-500' : 'bg-gray-300'
+                      }`} title={property.includeMaintenance ? 'Included in DSCR' : 'Not included in DSCR'}></div>
+                    </div>
+                    <span className="font-medium">
+                      {expenseViewMode === 'annual' 
+                        ? formatCurrency(dscrCalculation.annualExpenses.maintenance)
+                        : formatCurrency(dscrCalculation.annualExpenses.maintenance / 12)
+                      }
+                    </span>
+                  </div>
+                )}
+
+                {/* HOA Fees */}
+                {dscrCalculation.annualExpenses.hoaFees > 0 && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-600">HOA Fees</span>
+                      <div className={`w-3 h-3 rounded-full ${
+                        property.includeHoaFees ? 'bg-green-500' : 'bg-gray-300'
+                      }`} title={property.includeHoaFees ? 'Included in DSCR' : 'Not included in DSCR'}></div>
+                    </div>
+                    <span className="font-medium">
+                      {expenseViewMode === 'annual' 
+                        ? formatCurrency(dscrCalculation.annualExpenses.hoaFees)
+                        : formatCurrency(dscrCalculation.annualExpenses.hoaFees / 12)
+                      }
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Total DSCR Expenses */}
+            <div className="bg-primary-50 p-4 rounded-lg border border-primary-200">
+              <div className="flex justify-between items-center">
+                <span className="font-medium text-primary-900">Total DSCR Expenses:</span>
+                <span className="text-lg font-semibold text-primary-900">
+                  {expenseViewMode === 'annual' 
+                    ? formatCurrency(dscrCalculation.dscrExpenses)
+                    : formatCurrency(dscrCalculation.dscrExpenses / 12)
                   }
                 </span>
               </div>
-            )}
-
-            {dscrCalculation.breakdown.maintenance > 0 && (
-              <div className="flex justify-between py-2 border-b border-gray-200">
-                <span className="text-gray-600">Maintenance Reserves:</span>
-                <span className="font-medium">
-                  {expenseViewMode === 'annual'
-                    ? formatCurrency(dscrCalculation.breakdown.maintenance)
-                    : formatCurrency(toMonthly(dscrCalculation.breakdown.maintenance))
-                  }
-                </span>
-              </div>
-            )}
-
-            {dscrCalculation.breakdown.hoaFees > 0 && (
-              <div className="flex justify-between py-2 border-b border-gray-200">
-                <span className="text-gray-600">HOA Fees:</span>
-                <span className="font-medium">
-                  {expenseViewMode === 'annual'
-                    ? formatCurrency(dscrCalculation.breakdown.hoaFees)
-                    : formatCurrency(toMonthly(dscrCalculation.breakdown.hoaFees))
-                  }
-                </span>
-              </div>
-            )}
-
-            <div className="flex justify-between py-2 font-semibold text-lg">
-              <span className="text-gray-900">
-                Total {expenseViewMode === 'annual' ? 'Annual' : 'Monthly'} Expenses:
-              </span>
-              <span className="text-primary-700">
-                {expenseViewMode === 'annual'
-                  ? formatCurrency(dscrCalculation.totalExpenses)
-                  : formatCurrency(toMonthly(dscrCalculation.totalExpenses))
-                }
-              </span>
+              <p className="text-xs text-primary-700 mt-1">
+                Only expenses with checked boxes are included in DSCR calculation
+              </p>
             </div>
           </div>
         </div>
       )}
-
-      {/* DSCR Guidelines */}
-      <div className="card bg-blue-50 border-blue-200">
-        <h3 className="text-lg font-semibold text-blue-900 mb-3 flex items-center gap-2">
-          <AlertTriangle className="w-5 h-5" />
-          DSCR Guidelines
-        </h3>
-        <div className="space-y-2 text-sm text-blue-800">
-          <p><strong>DSCR ≥ 1.25:</strong> Excellent - Strong cash flow, easy financing</p>
-          <p><strong>DSCR 1.0-1.24:</strong> Acceptable - Positive cash flow, may qualify for financing</p>
-          <p><strong>DSCR &lt; 1.0:</strong> Poor - Negative cash flow, unlikely to qualify for financing</p>
-        </div>
-      </div>
-
-      {/* Cap Rate Guidelines */}
-      <div className="card bg-green-50 border-green-200">
-        <h3 className="text-lg font-semibold text-green-900 mb-3 flex items-center gap-2">
-          <Percent className="w-5 h-5" />
-          Cap Rate Guidelines
-        </h3>
-        <div className="space-y-2 text-sm text-green-800">
-          <p><strong>Cap Rate &gt; 8%:</strong> High return, typically higher risk properties or emerging markets</p>
-          <p><strong>Cap Rate 5-8%:</strong> Moderate return, balanced risk-reward, most common for residential</p>
-          <p><strong>Cap Rate &lt; 5%:</strong> Lower return, typically premium properties in established markets</p>
-          <p className="text-xs text-green-700 mt-2">
-            <strong>Note:</strong> Cap rates vary by location, property type, and market conditions. Compare with local market averages.
-          </p>
-        </div>
-      </div>
-
-      {/* No Input State */}
-      {!hasValidInputs && (
-        <div className="card text-center py-12">
-          <Calculator className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Enter Rental Property Details</h3>
-          <p className="text-gray-600">
-            Fill in the rental income and expense details to see your DSCR analysis
-          </p>
-        </div>
-      )}
     </div>
   )
-} 
+}
