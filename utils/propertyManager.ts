@@ -49,7 +49,7 @@ export function createProperty(
     maintenanceInputType: 'dollar',
     includeMaintenance: false,
     hoaFees: 0,
-    hoaInputType: 'dollar',
+    hoaInputType: 'monthly',
     includeHoaFees: false,
     downPayment: 0,
     downPaymentInputType: 'dollar',

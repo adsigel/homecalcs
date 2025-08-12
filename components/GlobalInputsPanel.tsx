@@ -27,7 +27,7 @@ export default function GlobalInputsPanel({
 }: GlobalInputsPanelProps) {
   // Calculate home sale proceeds for down payment (only for investment properties)
   const getHomeSaleProceeds = () => {
-    if (property.activeMode !== 'investment' || !propertiesCollection) return 0
+    if (calculatorMode !== 'investment' || !propertiesCollection) return 0
     
     if (!property.useHomeSaleProceedsAsDownPayment || !property.selectedHomeSalePropertyId) return 0
     
@@ -70,7 +70,7 @@ export default function GlobalInputsPanel({
     return propertiesCollection.properties.filter(p => 
       p.activeMode === 'homeSale' && p.id !== property.id
     )
-  }, [propertiesCollection.properties, property.id])
+  }, [propertiesCollection.properties, property.id, calculatorMode])
 
   return (
     <div className="space-y-6">
@@ -563,8 +563,8 @@ export default function GlobalInputsPanel({
                       onChange={(e) => handleSelectChange('hoaInputType', e.target.value)}
                       className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 h-10 bg-white"
                     >
-                      <option value="dollar">$</option>
-                      <option value="percentage">%</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="annual">Annual</option>
                     </select>
                   </div>
                   <div className="flex items-center">

@@ -49,7 +49,7 @@ export interface InvestmentData {
   includeMaintenance: boolean
   
   hoaFees: number
-  hoaInputType: 'dollar' | 'percentage'
+  hoaInputType: 'monthly' | 'annual'
   includeHoaFees: boolean
   
   // Down payment and financing

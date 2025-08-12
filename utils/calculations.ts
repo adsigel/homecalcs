@@ -220,9 +220,9 @@ export function calculateDSCR(property: Property, pitiCalculation: any): {
     ? property.maintenanceReserve * 12
     : (grossAnnualRentalIncome * property.maintenanceReserve / 100)
   
-  const annualHoaFees = property.hoaInputType === 'dollar'
+  const annualHoaFees = property.hoaInputType === 'monthly'
     ? property.hoaFees * 12
-    : (grossAnnualRentalIncome * property.hoaFees / 100)
+    : property.hoaFees
   
   const totalExpenses = annualPropertyManagement + annualMaintenance + annualHoaFees
   

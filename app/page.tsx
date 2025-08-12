@@ -139,28 +139,18 @@ export default function Home() {
     const supportsMode = supportsCalculatorMode(activeProperty, mode)
     console.log('🔍 Property supports mode:', mode, 'Result:', supportsMode)
     
+    let propertyToSwitch = activeProperty
+    
     if (!supportsMode) {
       console.log('➕ Adding calculator mode:', mode, 'to property')
       // Add the mode if it's not supported
-      const updatedProperty = addCalculatorMode(activeProperty, mode)
-      console.log('✅ Updated property with new mode:', updatedProperty)
-      setActiveProperty(updatedProperty)
-      
-      // Update the property in the collection
-      const updatedCollection = {
-        ...propertiesCollection,
-        properties: propertiesCollection.properties.map(p => 
-          p.id === activeProperty.id ? updatedProperty : p
-        )
-      }
-      
-      setPropertiesCollection(updatedCollection)
-      // Don't auto-save - user will save manually when ready
+      propertyToSwitch = addCalculatorMode(activeProperty, mode)
+      console.log('✅ Updated property with new mode:', propertyToSwitch)
     }
     
     // Switch to the mode
     console.log('🔄 Switching to mode:', mode)
-    const switchedProperty = switchCalculatorMode(activeProperty, mode)
+    const switchedProperty = switchCalculatorMode(propertyToSwitch, mode)
     console.log('✅ Switched property:', switchedProperty)
     console.log('🔍 Property activeMode after switch:', switchedProperty.activeMode)
     setActiveProperty(switchedProperty)
@@ -378,9 +368,9 @@ export default function Home() {
           <div>
             {activeProperty && (
               <>
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-xl font-semibold text-gray-900 mb-2">Property Inputs</h2>
+                    <h2 className="text-xl font-semibold text-gray-900">Property Inputs</h2>
                     <p className="text-sm text-gray-600">Enter your property details and financial information</p>
                   </div>
                   
@@ -413,12 +403,16 @@ export default function Home() {
                       className={`px-4 py-2 rounded-md font-medium transition-colors ${
                         calculatorMode === 'homeSale'
                           ? 'bg-primary-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
                         }`}
                     >
                       Sale Analysis
                     </button>
                   </div>
+                </div>
+                {/* Debug info */}
+                <div className="mb-4 p-2 bg-gray-100 rounded text-xs">
+                  <strong>Debug:</strong> calculatorMode: {calculatorMode}, activeProperty.activeMode: {activeProperty?.activeMode}
                 </div>
                 <GlobalInputsPanel
                   property={activeProperty}
