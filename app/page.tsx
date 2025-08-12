@@ -10,7 +10,14 @@ import PropertyManager from '@/components/PropertyManager'
 import { Property, HomeSaleProperty, InvestmentProperty, PropertiesCollection } from '@/types/property'
 import { calculatePITI, calculatePITIWithHomeSaleProceeds } from '@/utils/calculations'
 import HomeSaleCalculator from '@/components/HomeSaleCalculator'
-import { loadProperties, saveProperties, createInvestmentProperty, createHomeSaleProperty, addProperty } from '@/utils/propertyManager'
+import { createInvestmentProperty, createHomeSaleProperty, addProperty, loadProperties } from '@/utils/propertyManager'
+import { 
+  loadPropertiesCollection, 
+  savePropertiesCollection, 
+  subscribeToPropertiesCollection 
+} from '@/utils/cloudPropertyManager'
+import { onAuthStateChange } from '@/utils/firebase'
+import GoogleSignIn from '@/components/GoogleSignIn'
 import { FolderOpen, Home as HomeIcon, Building2, Trash2 } from 'lucide-react'
 
 export default function Home() {
@@ -29,33 +36,75 @@ export default function Home() {
   const [streetAddress, setStreetAddress] = useState('')
   const [propertyType, setPropertyType] = useState<'homeSale' | 'investment'>('investment')
 
-  // Load properties from localStorage on component mount
+  // Initialize authentication and load properties
   useEffect(() => {
-    setIsHydrated(true)
-    const loaded = loadProperties()
-    setPropertiesCollection(loaded)
-    
-    // If no properties exist, create a default investment property
-    if (loaded.properties.length === 0) {
-      const defaultProperty = createInvestmentProperty('New Property', '')
-      const newCollection = { properties: [defaultProperty], activePropertyId: defaultProperty.id }
-      setPropertiesCollection(newCollection)
-      saveProperties(newCollection)
-      setActiveProperty(defaultProperty)
-      setCalculatorMode(defaultProperty.calculatorMode)
-    } else if (loaded.activePropertyId) {
-      const active = loaded.properties.find(p => p.id === loaded.activePropertyId)
-      if (active) {
-        setActiveProperty(active)
-        setCalculatorMode(active.calculatorMode)
-      }
+    const initializeStorage = async () => {
+      console.log('🔄 Starting authentication initialization...')
+      setIsHydrated(true)
+      
+      // Set up auth state listener
+      const unsubscribe = onAuthStateChange(async (user) => {
+        if (user) {
+          console.log('✅ User authenticated:', user.email)
+          console.log('👤 User ID:', user.uid)
+          
+          // Load properties from cloud storage
+          console.log('📥 Loading properties from cloud storage...')
+          const loaded = await loadPropertiesCollection()
+          console.log('📦 Loaded properties:', loaded)
+          
+          if (loaded) {
+            setPropertiesCollection(loaded)
+            
+            // If no properties exist, create a default investment property
+            if (loaded.properties.length === 0) {
+              console.log('🆕 No properties found, creating default...')
+              const defaultProperty = createInvestmentProperty('New Property', '')
+              const newCollection = { properties: [defaultProperty], activePropertyId: defaultProperty.id }
+              setPropertiesCollection(newCollection)
+              savePropertiesCollection(newCollection).catch(error => {
+                console.error('❌ Failed to save default property:', error)
+              })
+              setActiveProperty(defaultProperty)
+              setCalculatorMode(defaultProperty.calculatorMode)
+            } else if (loaded.activePropertyId) {
+              console.log('✅ Found existing properties, setting active...')
+              const active = loaded.properties.find((p: Property) => p.id === loaded.activePropertyId)
+              if (active) {
+                setActiveProperty(active)
+                setCalculatorMode(active.calculatorMode)
+              }
+            }
+          }
+        } else {
+          console.log('👤 No user authenticated, using localStorage...')
+          // Fallback to localStorage when not authenticated
+          const loaded = loadProperties()
+          setPropertiesCollection(loaded)
+          if (loaded.properties.length > 0 && loaded.activePropertyId) {
+            const active = loaded.properties.find((p: Property) => p.id === loaded.activePropertyId)
+            if (active) {
+              setActiveProperty(active)
+              setCalculatorMode(active.calculatorMode)
+            }
+          }
+        }
+      })
+      
+      // Cleanup subscription
+      return () => unsubscribe()
     }
+    
+    initializeStorage()
   }, [])
 
-  // Save properties to localStorage whenever they change
+  // Save properties to cloud storage whenever they change
   useEffect(() => {
     if (isHydrated) {
-      saveProperties(propertiesCollection)
+      console.log('💾 Saving properties to cloud storage:', propertiesCollection)
+      savePropertiesCollection(propertiesCollection).catch(error => {
+        console.error('❌ Failed to save properties to cloud storage:', error)
+      })
     }
   }, [propertiesCollection, isHydrated])
 
@@ -75,7 +124,9 @@ export default function Home() {
         const defaultProperty = createInvestmentProperty('New Property', '')
         const newCollection = { properties: [defaultProperty], activePropertyId: defaultProperty.id }
         setPropertiesCollection(newCollection)
-        saveProperties(newCollection)
+        savePropertiesCollection(newCollection).catch(error => {
+          console.error('Failed to save default property:', error)
+        })
         setActiveProperty(defaultProperty)
         setCalculatorMode(defaultProperty.calculatorMode)
       }
@@ -92,7 +143,9 @@ export default function Home() {
       activePropertyId: property.id
     }
     setPropertiesCollection(updatedCollection)
-    saveProperties(updatedCollection)
+    savePropertiesCollection(updatedCollection).catch(error => {
+      console.error('Failed to save property change:', error)
+    })
   }
 
   const handlePropertyUpdate = (updates: Partial<Property>) => {
@@ -154,7 +207,9 @@ export default function Home() {
     }
     
     setPropertiesCollection(updatedCollection)
-    saveProperties(updatedCollection)
+    savePropertiesCollection(updatedCollection).catch(error => {
+      console.error('Failed to save renamed property:', error)
+    })
     setShowRenameModal(false)
     setPropertyToRename(null)
     setPropertyName('')
@@ -177,7 +232,9 @@ export default function Home() {
 
     const updatedCollection = addProperty(propertiesCollection, newProperty)
     setPropertiesCollection(updatedCollection)
-    saveProperties(updatedCollection)
+    savePropertiesCollection(updatedCollection).catch(error => {
+      console.error('Failed to save new property:', error)
+    })
     
     setActiveProperty(newProperty)
     setCalculatorMode(newProperty.calculatorMode)
@@ -200,7 +257,9 @@ export default function Home() {
       }
       
       setPropertiesCollection(updatedCollection)
-      saveProperties(updatedCollection)
+      savePropertiesCollection(updatedCollection).catch(error => {
+        console.error('Failed to save property:', error)
+      })
       setShowSaveDialog(false)
       return
     }
@@ -217,7 +276,9 @@ export default function Home() {
     }
     
     setPropertiesCollection(updatedCollection)
-    saveProperties(updatedCollection)
+    savePropertiesCollection(updatedCollection).catch(error => {
+      console.error('Failed to save property:', error)
+    })
     setActiveProperty(updatedProperty)
     
     setShowSaveDialog(false)
@@ -265,6 +326,14 @@ export default function Home() {
           <h1 className="text-4xl font-bold text-gray-900 mb-2">HomeCalcs</h1>
           <p className="text-lg text-gray-600">Real Estate Investment & Home Sale Calculator</p>
         </header>
+
+        {/* Google Sign-In */}
+        <div className="mb-6">
+          <GoogleSignIn onAuthStateChange={(user) => {
+            // This will trigger the auth state change in the useEffect
+            console.log('Auth state changed:', user?.email || 'Signed out')
+          }} />
+        </div>
 
         {/* Calculator Navigation */}
         {activeProperty && (
@@ -496,7 +565,9 @@ export default function Home() {
                                 properties: propertiesCollection.properties.filter(p => p.id !== property.id)
                               }
                               setPropertiesCollection(updatedCollection)
-                              saveProperties(updatedCollection)
+                              savePropertiesCollection(updatedCollection).catch(error => {
+                                console.error('Failed to save property:', error)
+                              })
                               
                               if (activeProperty?.id === property.id) {
                                 if (updatedCollection.properties.length > 0) {
@@ -504,10 +575,12 @@ export default function Home() {
                                   setCalculatorMode(updatedCollection.properties[0].calculatorMode)
                                 } else {
                                   const defaultProperty = createInvestmentProperty('New Property', '')
-                                  const newCollection = { properties: [defaultProperty], activePropertyId: defaultProperty.id }
-                                  setPropertiesCollection(newCollection)
-                                  saveProperties(newCollection)
-                                  setActiveProperty(defaultProperty)
+                                                                      const newCollection = { properties: [defaultProperty], activePropertyId: defaultProperty.id }
+                                    setPropertiesCollection(newCollection)
+                                    savePropertiesCollection(newCollection).catch(error => {
+                                      console.error('Failed to save property:', error)
+                                    })
+                                    setActiveProperty(defaultProperty)
                                   setCalculatorMode(defaultProperty.calculatorMode)
                                 }
                               }

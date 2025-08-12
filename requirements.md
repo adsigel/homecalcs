@@ -13,6 +13,7 @@ HomeCalcs is a collection of financial calculator tools designed for homeowners 
 - **1031 Exchange Support**: Complete tax-deferred exchange calculations including boot detection and QI fees
 - **Cross-Property Integration**: Use home sale proceeds as down payments for investment properties
 - **Smart Property Management**: Auto-save, rename, and manage properties with intuitive interface
+- **Cloud Storage**: Firebase Firestore integration for cross-device property access and real-time sync
 
 ### 🎯 **Professional Features:**
 - **Decimal Precision**: Mortgage rates up to 3 decimals (7.125%), percentages up to 2 decimals (20.5%)
@@ -129,6 +130,30 @@ HomeCalcs is a collection of financial calculator tools designed for homeowners 
 - **Performance Optimization**: useCallback and useEffect optimizations to prevent infinite re-renders
 - **Type Safety**: Full TypeScript support with proper interfaces for all property types
 - **Error Handling**: Robust error handling for property deletion and state synchronization
+
+## Cloud Storage & Cross-Device Sync ✅
+
+**Status: Fully Implemented**
+
+### Core Features:
+- **Firebase Firestore Integration**: Secure cloud database for property storage
+- **Anonymous Authentication**: Simple, secure user identification without sign-up requirements
+- **Real-Time Sync**: Properties automatically sync across all devices in real-time
+- **Offline Support**: Graceful fallback handling for network connectivity issues
+- **Data Persistence**: All properties stored securely in the cloud with automatic backup
+
+### Technical Implementation:
+- **Firebase SDK**: Modern Firebase v9+ modular API integration
+- **Cloud Property Manager**: Complete replacement of localStorage with cloud storage functions
+- **Error Handling**: Comprehensive error handling for network and authentication issues
+- **Performance**: Optimized for minimal latency and maximum reliability
+- **Security**: Firebase security rules and anonymous authentication for data protection
+
+### User Experience:
+- **Seamless Migration**: No user action required - properties automatically sync to cloud
+- **Cross-Device Access**: Access properties from any device with internet connection
+- **Automatic Backup**: All data automatically backed up in Firebase
+- **Real-Time Updates**: Changes made on one device immediately appear on others
 
 ## Shared Inputs Framework ✅
 

@@ -12,7 +12,7 @@ export interface HomeSaleProperty {
   originalPurchasePrice: number
   // 1031 Exchange fields
   use1031Exchange: boolean
-  selectedReplacementPropertyId?: string // ID of the replacement investment property
+  selectedReplacementPropertyId: string | null // ID of the replacement investment property
   calculatorMode: 'homeSale'
 }
 
@@ -47,17 +47,18 @@ export interface InvestmentProperty {
   includeHoaFees: boolean
   // Integration with home sale proceeds
   useHomeSaleProceedsAsDownPayment: boolean
-  selectedHomeSalePropertyId?: string // ID of the home sale property whose proceeds to use
+  selectedHomeSalePropertyId: string | null // ID of the home sale property whose proceeds to use
   calculatorMode: 'investment'
 }
 
 // Union type for all properties
 export type Property = HomeSaleProperty | InvestmentProperty
 
-// Properties collection stored in localStorage
+// Properties collection stored in localStorage/cloud storage
 export interface PropertiesCollection {
   properties: Property[]
   activePropertyId: string | null
+  lastUpdated?: string // ISO timestamp for cloud storage sync
 }
 
 // Legacy interface for backward compatibility during transition

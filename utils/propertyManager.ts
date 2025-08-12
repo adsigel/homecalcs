@@ -16,7 +16,7 @@ export function createHomeSaleProperty(name: string, streetAddress: string): Hom
     capitalGainsTaxRate: 15,
     originalPurchasePrice: 0,
     use1031Exchange: false,
-    selectedReplacementPropertyId: undefined,
+    selectedReplacementPropertyId: null,
     calculatorMode: 'homeSale'
   }
 }
@@ -52,7 +52,7 @@ export function createInvestmentProperty(name: string, streetAddress: string): I
     hoaInputType: 'monthly',
     includeHoaFees: false,
     useHomeSaleProceedsAsDownPayment: false,
-    selectedHomeSalePropertyId: undefined,
+    selectedHomeSalePropertyId: null,
     calculatorMode: 'investment'
   }
 }
