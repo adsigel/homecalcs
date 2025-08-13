@@ -6,12 +6,15 @@ import { createProperty, addCalculatorMode, switchCalculatorMode, supportsCalcul
 import { savePropertiesCollection, loadPropertiesCollection } from '@/utils/cloudPropertyManager'
 import { onAuthStateChange } from '@/utils/firebase'
 import { loadProperties } from '@/utils/propertyManager'
+import { trackCalculatorModeToggle, trackPropertyAdded, trackPropertyToggle, trackSaveButtonClicked, trackPropertyRenamed, trackFirstPropertyCreated } from '@/utils/amplitude'
 import Header from '@/components/Header'
 import GlobalInputsPanel from '@/components/GlobalInputsPanel'
 import PITICalculator from '@/components/PITICalculator'
 import DSCRCalculator from '@/components/DSCRCalculator'
 import HomeSaleCalculator from '@/components/HomeSaleCalculator'
 import PropertyManager from '@/components/PropertyManager'
+import AmplitudeProvider from '@/components/AmplitudeProvider'
+import EmptyState from '@/components/EmptyState'
 
 export default function Home() {
   const [isHydrated, setIsHydrated] = useState(false)
@@ -156,6 +159,9 @@ export default function Home() {
     setActiveProperty(switchedProperty)
     setCalculatorMode(mode)
     
+    // Track calculator mode toggle with Amplitude
+    trackCalculatorModeToggle(calculatorMode, mode, activeProperty.id)
+    
     // Update the property in the collection
     const updatedCollection = {
       ...propertiesCollection,
@@ -212,6 +218,14 @@ export default function Home() {
     setCalculatorMode(propertyType)
     setShowNewPropertyDialog(false)
     
+    // Track property addition with Amplitude
+    trackPropertyAdded(newProperty.id, propertyType, propertyType)
+    
+    // Track if this is the first property
+    if (propertiesCollection.properties.length === 0) {
+      trackFirstPropertyCreated(newProperty.id, propertyType)
+    }
+    
     savePropertiesCollection(updatedCollection).catch(error => {
       console.error('Failed to save new property:', error)
     })
@@ -250,6 +264,13 @@ export default function Home() {
       )
     }
     
+    // Track property rename with Amplitude
+    trackPropertyRenamed(
+      propertyToRename.id,
+      propertyToRename.name || 'Unnamed Property',
+      propertyName.trim()
+    )
+    
     setPropertiesCollection(updatedCollection)
     if (activeProperty?.id === propertyToRename.id) {
       setActiveProperty(updatedProperty)
@@ -263,9 +284,15 @@ export default function Home() {
 
   // Handle property selection from property manager
   const handlePropertySelect = (property: Property) => {
+    const previousPropertyId = activeProperty?.id
     setActiveProperty(property)
     setCalculatorMode(property.activeMode)
     setPropertiesCollection(prev => ({ ...prev, activePropertyId: property.id }))
+    
+    // Track property toggle with Amplitude
+    if (previousPropertyId) {
+      trackPropertyToggle(previousPropertyId, property.id, property.activeMode)
+    }
   }
 
   // Handle property deletion
@@ -354,8 +381,10 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header
+    <>
+      <AmplitudeProvider />
+      <div className="min-h-screen bg-gray-50">
+        <Header
         onShowManageModal={handleShowManageModal}
         onAuthStateChange={(user: any) => {
           console.log('Auth state changed:', user?.email || 'Signed out')
@@ -363,7 +392,10 @@ export default function Home() {
       />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {!activeProperty ? (
+          <EmptyState onShowNewPropertyDialog={handleShowNewPropertyDialog} />
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column - Calculator Inputs */}
           <div>
             {activeProperty && (
@@ -376,7 +408,11 @@ export default function Home() {
                   
                   {/* Save Button */}
                   <button
-                    onClick={handleSaveProperty}
+                    onClick={() => {
+                      // Track save button click with Amplitude
+                      trackSaveButtonClicked(activeProperty.id, calculatorMode, true)
+                      handleSaveProperty()
+                    }}
                     className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
                     title="Save all changes to this property"
                   >
@@ -461,6 +497,7 @@ export default function Home() {
             </div>
           )}
         </div>
+        )}
       </main>
 
       {/* New Property Dialog */}
@@ -614,6 +651,7 @@ export default function Home() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 } 

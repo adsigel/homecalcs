@@ -1,5 +1,6 @@
 import React from 'react'
 import { signInWithGoogle, signOutUser, getCurrentUser } from '@/utils/firebase'
+import { trackGoogleSignIn } from '@/utils/amplitude'
 
 interface GoogleSignInProps {
   onAuthStateChange: (user: any) => void
@@ -13,6 +14,10 @@ export default function GoogleSignIn({ onAuthStateChange }: GoogleSignInProps) {
       console.log('🔄 Starting Google sign-in process...')
       const user = await signInWithGoogle()
       console.log('✅ Google sign-in successful:', user.email)
+      
+      // Track successful sign-in with Amplitude
+      trackGoogleSignIn(user.uid, user.email || undefined)
+      
       onAuthStateChange(user)
     } catch (error: any) {
       console.error('❌ Sign-in failed:', error)

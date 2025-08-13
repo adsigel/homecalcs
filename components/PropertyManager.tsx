@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { Property, PropertiesCollection } from '@/types/property'
 import { FolderOpen, Trash2, Home, Building2, Edit3 } from 'lucide-react'
+import { trackPropertyManagerOpen, trackPropertyManagerClose, trackPropertyLoaded, trackPropertyRenamed, trackPropertyDeleted } from '@/utils/amplitude'
 
 interface PropertyManagerProps {
   propertiesCollection: PropertiesCollection
@@ -24,14 +25,33 @@ export default function PropertyManager({
   // Load properties from localStorage on component mount
   useEffect(() => {
     setIsHydrated(true)
-  }, [])
+    // Track Property Manager opening
+    trackPropertyManagerOpen(propertiesCollection.properties.length)
+    
+    // Track Property Manager closing when component unmounts
+    return () => {
+      trackPropertyManagerClose(propertiesCollection.properties.length)
+    }
+  }, [propertiesCollection.properties.length])
 
   const deletePropertyById = (propertyId: string) => {
     if (confirm('Are you sure you want to delete this property?')) {
+      const propertyToDelete = propertiesCollection.properties.find(p => p.id === propertyId)
       const updatedCollection = {
         ...propertiesCollection,
         properties: propertiesCollection.properties.filter(p => p.id !== propertyId)
       }
+      
+      // Track property deletion
+      if (propertyToDelete) {
+        trackPropertyDeleted(
+          propertyToDelete.id,
+          propertyToDelete.name || 'Unnamed Property',
+          propertyToDelete.activeMode,
+          updatedCollection.properties.length
+        )
+      }
+      
       onPropertiesCollectionChange(updatedCollection)
     }
   }
@@ -113,6 +133,12 @@ export default function PropertyManager({
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
+                        // Track property loading
+                        trackPropertyLoaded(
+                          property.id,
+                          property.name || 'Unnamed Property',
+                          property.activeMode
+                        )
                         onPropertySelect(property)
                         onClose()
                       }}
@@ -122,7 +148,15 @@ export default function PropertyManager({
                       Load
                     </button>
                     <button
-                      onClick={() => onShowRenameModal(property)}
+                      onClick={() => {
+                        // Track rename button click
+                        trackPropertyRenamed(
+                          property.id,
+                          property.name || 'Unnamed Property',
+                          'Renaming...' // We'll track the actual rename when it happens
+                        )
+                        onShowRenameModal(property)
+                      }}
                       className="btn-secondary text-sm px-3 py-1"
                       title="Rename this property"
                     >

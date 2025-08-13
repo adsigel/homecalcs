@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react'
 import { Property, PropertiesCollection } from '@/types/property'
 import { formatCurrency, formatPercentage, formatNumber } from '@/utils/calculations'
 import { calculateNetProceeds } from '@/utils/calculations'
+import { trackInputFieldPopulated, track1031ExchangeToggle, trackHomeSaleProceedsToggle, trackTimeframeToggle, trackInputTypeToggle } from '@/utils/amplitude'
 import EnhancedAddressField from './EnhancedAddressField'
 
 interface GlobalInputsPanelProps {
@@ -45,6 +46,9 @@ export default function GlobalInputsPanel({
   const handleInputChange = (key: string, value: number) => {
     const updates = { [key]: value } as Partial<Property>
     onUpdate(updates)
+    
+    // Track input field population with Amplitude
+    trackInputFieldPopulated(key, typeof value, property.id, calculatorMode)
   }
 
   // Handle text changes
@@ -57,12 +61,26 @@ export default function GlobalInputsPanel({
   const handleToggle = (key: string, value: boolean) => {
     const updates = { [key]: value } as Partial<Property>
     onUpdate(updates)
+    
+    // Track specific toggle events with Amplitude
+    if (key === 'use1031Exchange') {
+      track1031ExchangeToggle(value, property.id, property.selectedReplacementPropertyId || undefined)
+    } else if (key === 'useHomeSaleProceedsAsDownPayment') {
+      trackHomeSaleProceedsToggle(value, property.id, property.selectedHomeSalePropertyId || undefined)
+    }
   }
 
   // Handle select changes
   const handleSelectChange = (key: string, value: string) => {
     const updates = { [key]: value } as Partial<Property>
     onUpdate(updates)
+    
+    // Track specific select changes with Amplitude
+    if (key === 'selectedReplacementPropertyId' && value) {
+      track1031ExchangeToggle(true, property.id, value)
+    } else if (key === 'selectedHomeSalePropertyId' && value) {
+      trackHomeSaleProceedsToggle(true, property.id, value)
+    }
   }
 
   // Get available home sale properties for down payment selection
@@ -425,7 +443,13 @@ export default function GlobalInputsPanel({
               <div className="flex rounded-md shadow-sm">
                 <button
                   type="button"
-                  onClick={() => handleSelectChange('taxTimeframe', 'annual')}
+                  onClick={() => {
+                    const fromTimeframe = property.taxTimeframe
+                    handleSelectChange('taxTimeframe', 'annual')
+                    if (fromTimeframe !== 'annual') {
+                      trackTimeframeToggle('Property Taxes', fromTimeframe, 'annual', property.id, calculatorMode)
+                    }
+                  }}
                   className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
                     property.taxTimeframe === 'annual'
                       ? 'bg-primary-600 text-white border-primary-600'
@@ -436,7 +460,13 @@ export default function GlobalInputsPanel({
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleSelectChange('taxTimeframe', 'monthly')}
+                  onClick={() => {
+                    const fromTimeframe = property.taxTimeframe
+                    handleSelectChange('taxTimeframe', 'monthly')
+                    if (fromTimeframe !== 'monthly') {
+                      trackTimeframeToggle('Property Taxes', fromTimeframe, 'monthly', property.id, calculatorMode)
+                    }
+                  }}
                   className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
                     property.taxTimeframe === 'monthly'
                       ? 'bg-primary-600 text-white border-primary-600'
@@ -470,7 +500,13 @@ export default function GlobalInputsPanel({
               <div className="flex rounded-md shadow-sm">
                 <button
                   type="button"
-                  onClick={() => handleSelectChange('insuranceTimeframe', 'annual')}
+                  onClick={() => {
+                    const fromTimeframe = property.insuranceTimeframe
+                    handleSelectChange('insuranceTimeframe', 'annual')
+                    if (fromTimeframe !== 'annual') {
+                      trackTimeframeToggle('Property Insurance', fromTimeframe, 'annual', property.id, calculatorMode)
+                    }
+                  }}
                   className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
                     property.insuranceTimeframe === 'annual'
                       ? 'bg-primary-600 text-white border-primary-600'
@@ -481,7 +517,13 @@ export default function GlobalInputsPanel({
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleSelectChange('insuranceTimeframe', 'monthly')}
+                  onClick={() => {
+                    const fromTimeframe = property.insuranceTimeframe
+                    handleSelectChange('insuranceTimeframe', 'monthly')
+                    if (fromTimeframe !== 'monthly') {
+                      trackTimeframeToggle('Property Insurance', fromTimeframe, 'monthly', property.id, calculatorMode)
+                    }
+                  }}
                   className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
                     property.insuranceTimeframe === 'monthly'
                       ? 'bg-primary-600 text-white border-primary-600'
@@ -523,7 +565,13 @@ export default function GlobalInputsPanel({
                 <div className="flex rounded-md shadow-sm">
                   <button
                     type="button"
-                    onClick={() => handleSelectChange('rentalIncomeInputType', 'annual')}
+                    onClick={() => {
+                      const fromTimeframe = property.rentalIncomeInputType
+                      handleSelectChange('rentalIncomeInputType', 'annual')
+                      if (fromTimeframe !== 'annual') {
+                        trackTimeframeToggle('Gross Rental Income', fromTimeframe, 'annual', property.id, calculatorMode)
+                      }
+                    }}
                     className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
                       property.rentalIncomeInputType === 'annual'
                         ? 'bg-primary-600 text-white border-primary-600'
@@ -534,7 +582,13 @@ export default function GlobalInputsPanel({
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleSelectChange('rentalIncomeInputType', 'monthly')}
+                    onClick={() => {
+                      const fromTimeframe = property.rentalIncomeInputType
+                      handleSelectChange('rentalIncomeInputType', 'monthly')
+                      if (fromTimeframe !== 'monthly') {
+                        trackTimeframeToggle('Gross Rental Income', fromTimeframe, 'monthly', property.id, calculatorMode)
+                      }
+                    }}
                     className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
                       property.rentalIncomeInputType === 'monthly'
                         ? 'bg-primary-600 text-white border-primary-600'
@@ -587,7 +641,13 @@ export default function GlobalInputsPanel({
                   <div className="flex rounded-md shadow-sm">
                     <button
                       type="button"
-                      onClick={() => handleSelectChange('propertyManagementInputType', 'dollar')}
+                      onClick={() => {
+                        const fromType = property.propertyManagementInputType
+                        handleSelectChange('propertyManagementInputType', 'dollar')
+                        if (fromType !== 'dollar') {
+                          trackInputTypeToggle('Property Management Fee', fromType, 'dollar', property.id, calculatorMode)
+                        }
+                      }}
                       className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
                         property.propertyManagementInputType === 'dollar'
                           ? 'bg-primary-600 text-white border-primary-600'
@@ -598,7 +658,13 @@ export default function GlobalInputsPanel({
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleSelectChange('propertyManagementInputType', 'percentage')}
+                      onClick={() => {
+                        const fromType = property.propertyManagementInputType
+                        handleSelectChange('propertyManagementInputType', 'percentage')
+                        if (fromType !== 'percentage') {
+                          trackInputTypeToggle('Property Management Fee', fromType, 'percentage', property.id, calculatorMode)
+                        }
+                      }}
                       className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
                         property.propertyManagementInputType === 'percentage'
                           ? 'bg-primary-600 text-white border-primary-600'
@@ -640,7 +706,13 @@ export default function GlobalInputsPanel({
                   <div className="flex rounded-md shadow-sm">
                     <button
                       type="button"
-                      onClick={() => handleSelectChange('maintenanceInputType', 'dollar')}
+                      onClick={() => {
+                        const fromType = property.maintenanceInputType
+                        handleSelectChange('maintenanceInputType', 'dollar')
+                        if (fromType !== 'dollar') {
+                          trackInputTypeToggle('Maintenance Reserve', fromType, 'dollar', property.id, calculatorMode)
+                        }
+                      }}
                       className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
                         property.maintenanceInputType === 'dollar'
                           ? 'bg-primary-600 text-white border-primary-600'
@@ -651,7 +723,13 @@ export default function GlobalInputsPanel({
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleSelectChange('maintenanceInputType', 'percentage')}
+                      onClick={() => {
+                        const fromType = property.maintenanceInputType
+                        handleSelectChange('maintenanceInputType', 'percentage')
+                        if (fromType !== 'percentage') {
+                          trackInputTypeToggle('Maintenance Reserve', fromType, 'percentage', property.id, calculatorMode)
+                        }
+                      }}
                       className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
                         property.maintenanceInputType === 'percentage'
                           ? 'bg-primary-600 text-white border-primary-600'
@@ -693,7 +771,13 @@ export default function GlobalInputsPanel({
                   <div className="flex rounded-md shadow-sm">
                     <button
                       type="button"
-                      onClick={() => handleSelectChange('hoaInputType', 'annual')}
+                      onClick={() => {
+                        const fromTimeframe = property.hoaInputType
+                        handleSelectChange('hoaInputType', 'annual')
+                        if (fromTimeframe !== 'annual') {
+                          trackTimeframeToggle('HOA Fees', fromTimeframe, 'annual', property.id, calculatorMode)
+                        }
+                      }}
                       className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
                         property.hoaInputType === 'annual'
                           ? 'bg-primary-600 text-white border-primary-600'
@@ -704,7 +788,13 @@ export default function GlobalInputsPanel({
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleSelectChange('hoaInputType', 'monthly')}
+                      onClick={() => {
+                        const fromTimeframe = property.hoaInputType
+                        handleSelectChange('hoaInputType', 'monthly')
+                        if (fromTimeframe !== 'monthly') {
+                          trackTimeframeToggle('HOA Fees', fromTimeframe, 'monthly', property.id, calculatorMode)
+                        }
+                      }}
                       className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
                         property.hoaInputType === 'monthly'
                           ? 'bg-primary-600 text-white border-primary-600'
