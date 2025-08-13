@@ -27,7 +27,6 @@ export default function Home() {
   const [showManageModal, setShowManageModal] = useState(false)
   const [showSaveDialog, setShowSaveDialog] = useState(false)
   const [showRenameModal, setShowRenameModal] = useState(false)
-  const [propertyName, setPropertyName] = useState('')
   const [streetAddress, setStreetAddress] = useState('')
   const [propertyType, setPropertyType] = useState<'investment' | 'homeSale'>('investment')
   const [marketValue, setMarketValue] = useState('')
@@ -179,7 +178,6 @@ export default function Home() {
   // Show new property dialog
   const handleShowNewPropertyDialog = () => {
     setStreetAddress(activeProperty?.streetAddress || '')
-    setPropertyName('')
     setPropertyType('investment')
     setShowNewPropertyDialog(true)
   }
@@ -192,7 +190,6 @@ export default function Home() {
   // Show save dialog
   const handleShowSaveDialog = () => {
     if (activeProperty) {
-      setPropertyName(activeProperty.name)
       setStreetAddress(activeProperty.streetAddress)
     }
     setShowSaveDialog(true)
@@ -201,16 +198,16 @@ export default function Home() {
   // Show rename modal
   const handleShowRenameModal = (property: Property) => {
     setPropertyToRename(property)
-    setPropertyName(property.name)
+    setStreetAddress(property.name)
     setShowRenameModal(true)
   }
 
   // Create new property
   const createNewProperty = () => {
-    if (!propertyName.trim() || !streetAddress.trim()) return
+    if (!streetAddress.trim()) return
 
     const newProperty = createProperty(
-      propertyName.trim(), 
+      streetAddress.trim(), 
       streetAddress.trim(), 
       propertyType,
       parseFloat(marketValue.replace(/,/g, '')) || 0,
@@ -227,7 +224,6 @@ export default function Home() {
     setShowNewPropertyDialog(false)
     
     // Reset form fields
-    setPropertyName('')
     setStreetAddress('')
     setMarketValue('')
     setYearBought('')
@@ -248,9 +244,9 @@ export default function Home() {
 
   // Save current property
   const saveCurrentProperty = () => {
-    if (!activeProperty || !propertyName.trim()) return
+    if (!activeProperty || !streetAddress.trim()) return
 
-    const updatedProperty = { ...activeProperty, name: propertyName.trim() }
+    const updatedProperty = { ...activeProperty, name: streetAddress.trim() }
     const updatedCollection = {
       ...propertiesCollection,
       properties: propertiesCollection.properties.map(p => 
@@ -269,9 +265,9 @@ export default function Home() {
 
   // Rename property
   const handleRenameProperty = () => {
-    if (!propertyToRename || !propertyName.trim()) return
+    if (!propertyToRename || !streetAddress.trim()) return
 
-    const updatedProperty = { ...propertyToRename, name: propertyName.trim() }
+    const updatedProperty = { ...propertyToRename, name: streetAddress.trim() }
     const updatedCollection = {
       ...propertiesCollection,
       properties: propertiesCollection.properties.map(p => 
@@ -283,7 +279,7 @@ export default function Home() {
     trackPropertyRenamed(
       propertyToRename.id,
       propertyToRename.name || 'Unnamed Property',
-      propertyName.trim()
+      streetAddress.trim()
     )
     
     setPropertiesCollection(updatedCollection)
@@ -522,16 +518,6 @@ export default function Home() {
             <h3 className="text-lg font-semibold mb-4">Create New Property</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Property Name</label>
-                <input
-                  type="text"
-                  value={propertyName}
-                  onChange={(e) => setPropertyName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Enter property name"
-                />
-              </div>
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
                 <input
                   type="text"
@@ -579,7 +565,6 @@ export default function Home() {
                 onClick={() => {
                   setShowNewPropertyDialog(false)
                   // Reset form fields
-                  setPropertyName('')
                   setStreetAddress('')
                   setMarketValue('')
                   setYearBought('')
@@ -589,13 +574,13 @@ export default function Home() {
               >
                 Cancel
               </button>
-              <button
-                onClick={createNewProperty}
-                disabled={!propertyName.trim() || !streetAddress.trim()}
-                className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
-              >
-                Create Property
-              </button>
+                              <button
+                  onClick={createNewProperty}
+                  disabled={!streetAddress.trim()}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
+                >
+                  Create Property
+                </button>
             </div>
           </div>
         </div>
@@ -619,16 +604,6 @@ export default function Home() {
             <h3 className="text-lg font-semibold mb-4">Save Property</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Property Name</label>
-                <input
-                  type="text"
-                  value={propertyName}
-                  onChange={(e) => setPropertyName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Enter property name"
-                />
-              </div>
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
                 <input
                   type="text"
@@ -647,13 +622,13 @@ export default function Home() {
               >
                 Cancel
               </button>
-              <button
-                onClick={saveCurrentProperty}
-                disabled={!propertyName.trim()}
-                className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
-              >
-                Save Property
-              </button>
+                              <button
+                  onClick={saveCurrentProperty}
+                  disabled={!streetAddress.trim()}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
+                >
+                  Save Property
+                </button>
             </div>
           </div>
         </div>
@@ -669,8 +644,8 @@ export default function Home() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Property Name</label>
                 <input
                   type="text"
-                  value={propertyName}
-                  onChange={(e) => setPropertyName(e.target.value)}
+                  value={streetAddress}
+                  onChange={(e) => setStreetAddress(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Enter new property name"
                 />
@@ -683,13 +658,13 @@ export default function Home() {
               >
                 Cancel
               </button>
-              <button
-                onClick={handleRenameProperty}
-                disabled={!propertyName.trim()}
-                className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
-              >
-                Rename Property
-              </button>
+                              <button
+                  onClick={handleRenameProperty}
+                  disabled={!streetAddress.trim()}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
+                >
+                  Rename Property
+                </button>
             </div>
           </div>
         </div>

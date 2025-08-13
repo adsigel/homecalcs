@@ -107,17 +107,6 @@ export default function GlobalInputsPanel({
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Property Name</label>
-            <input
-              type="text"
-              value={property.name || ''}
-              onChange={(e) => handleTextChange('name', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-              placeholder="Enter property name"
-            />
-          </div>
-          
-          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Property Type</label>
             <select
               value={property.propertyType}
@@ -130,19 +119,6 @@ export default function GlobalInputsPanel({
               <option value="townhouse">Townhouse</option>
               <option value="other">Other</option>
             </select>
-          </div>
-          
-
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Year Bought</label>
-            <input
-              type="number"
-              value={property.yearBought || ''}
-              onChange={(e) => handleInputChange('yearBought', parseInt(e.target.value) || 0)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-              placeholder="Year purchased"
-            />
           </div>
           
           <div>
@@ -161,135 +137,467 @@ export default function GlobalInputsPanel({
         </div>
       </div>
 
-      {/* Investment Property Inputs */}
-      {calculatorMode === 'investment' && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">Investment Property Details</h3>
+      {/* Purchase Info */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900">Purchase Info</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Year Bought</label>
+            <input
+              type="number"
+              value={property.yearBought || ''}
+              onChange={(e) => handleInputChange('yearBought', parseInt(e.target.value) || 0)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              placeholder="Year purchased"
+            />
+          </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Price</label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Price</label>
+            <input
+              type="text"
+              value={formatNumber(property.purchasePrice || 0)}
+              onChange={(e) => {
+                const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
+                handleInputChange('purchasePrice', value)
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              placeholder="Purchase price"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Down Payment</label>
+            <div className="flex gap-2">
               <input
                 type="text"
-                value={formatNumber(property.purchasePrice || 0)}
+                value={formatNumber(property.downPayment || 0)}
                 onChange={(e) => {
                   const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
-                  handleInputChange('purchasePrice', value)
+                  handleInputChange('downPayment', value)
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                placeholder="Purchase price"
+                className={`flex-1 px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                  property.useHomeSaleProceedsAsDownPayment
+                    ? 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed'
+                    : 'border-gray-300'
+                }`}
+                placeholder="Down payment"
+                readOnly={property.useHomeSaleProceedsAsDownPayment}
+                disabled={property.useHomeSaleProceedsAsDownPayment}
               />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Down Payment</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={formatNumber(property.downPayment || 0)}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
-                    handleInputChange('downPayment', value)
-                  }}
-                  className={`flex-1 px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                    property.useHomeSaleProceedsAsDownPayment
-                      ? 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed'
-                      : 'border-gray-300'
-                  }`}
-                  placeholder="Down payment"
-                  readOnly={property.useHomeSaleProceedsAsDownPayment}
-                  disabled={property.useHomeSaleProceedsAsDownPayment}
-                />
-                <select
-                  value={property.downPaymentInputType}
-                  onChange={(e) => handleSelectChange('downPaymentInputType', e.target.value)}
-                  className={`px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 h-10 ${
-                    property.useHomeSaleProceedsAsDownPayment
-                      ? 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed'
-                      : 'bg-white border-gray-300'
-                  }`}
-                  disabled={property.useHomeSaleProceedsAsDownPayment}
-                >
-                  <option value="dollar">$</option>
-                  <option value="percentage">%</option>
-                </select>
-              </div>
-              {property.useHomeSaleProceedsAsDownPayment && (
-                <p className="text-sm text-gray-600 mt-1">
-                  Down payment will be calculated from selected property's sale proceeds
-                </p>
-              )}
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Interest Rate (%)</label>
-              <input
-                type="number"
-                step="0.001"
-                value={property.interestRate || ''}
-                onChange={(e) => handleInputChange('interestRate', parseFloat(e.target.value) || 0)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                placeholder="Interest rate"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Loan Term (years)</label>
               <select
-                value={property.loanTerm}
-                onChange={(e) => handleInputChange('loanTerm', parseInt(e.target.value) || 30)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 h-10 bg-white"
+                value={property.downPaymentInputType}
+                onChange={(e) => handleSelectChange('downPaymentInputType', e.target.value)}
+                className={`px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 h-10 ${
+                  property.useHomeSaleProceedsAsDownPayment
+                    ? 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed'
+                    : 'bg-white border-gray-300'
+                }`}
+                disabled={property.useHomeSaleProceedsAsDownPayment}
               >
-                <option value={15}>15 years</option>
-                <option value={20}>20 years</option>
-                <option value={30}>30 years</option>
+                <option value="dollar">$</option>
+                <option value="percentage">%</option>
               </select>
             </div>
+            {property.useHomeSaleProceedsAsDownPayment && (
+              <p className="text-sm text-gray-600 mt-1">
+                Down payment will be calculated from selected property's sale proceeds
+              </p>
+            )}
           </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Interest Rate (%)</label>
+            <input
+              type="number"
+              step="0.001"
+              value={property.interestRate || ''}
+              onChange={(e) => handleInputChange('interestRate', parseFloat(e.target.value) || 0)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              placeholder="Interest rate"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Loan Term (years)</label>
+            <select
+              value={property.loanTerm}
+              onChange={(e) => handleInputChange('loanTerm', parseInt(e.target.value) || 30)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 h-10 bg-white"
+            >
+              <option value={15}>15 years</option>
+              <option value={20}>20 years</option>
+              <option value={30}>30 years</option>
+            </select>
+          </div>
+        </div>
 
-          {/* Use Home Sale Proceeds */}
-          <div className="space-y-3">
+        {/* Use Home Sale Proceeds */}
+        <div className="space-y-3">
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="useHomeSaleProceeds"
+              checked={property.useHomeSaleProceedsAsDownPayment}
+              onChange={(e) => handleToggle('useHomeSaleProceedsAsDownPayment', e.target.checked)}
+              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+            />
+            <label htmlFor="useHomeSaleProceeds" className="ml-2 block text-sm text-gray-900">
+              Use Home Sale Proceeds as Down Payment
+            </label>
+          </div>
+          
+          {property.useHomeSaleProceedsAsDownPayment && (
+            <div className="ml-6 space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Select Home Sale Property</label>
+                <select
+                  value={property.selectedHomeSalePropertyId || ''}
+                  onChange={(e) => handleSelectChange('selectedHomeSalePropertyId', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 h-10 bg-white"
+                >
+                  <option value="">-- Select a property --</option>
+                  {availableHomeSaleProperties.map((prop) => (
+                    <option key={prop.id} value={prop.id}>
+                      {prop.name || prop.streetAddress} (${(prop.salePrice || 0).toLocaleString()})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {property.selectedHomeSalePropertyId && (
+                <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-md">
+                  Available proceeds: {formatCurrency(getHomeSaleProceeds())}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Expenses */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900">Expenses</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Taxes */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-medium text-gray-600">Property Taxes</label>
+              <div className="flex rounded-md shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const fromTimeframe = property.taxTimeframe
+                    handleSelectChange('taxTimeframe', 'annual')
+                    if (fromTimeframe !== 'annual') {
+                      trackTimeframeToggle('Property Taxes', fromTimeframe, 'annual', property.id, calculatorMode)
+                    }
+                  }}
+                  className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
+                    property.taxTimeframe === 'annual'
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  Annual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const fromTimeframe = property.taxTimeframe
+                    handleSelectChange('taxTimeframe', 'monthly')
+                    if (fromTimeframe !== 'monthly') {
+                      trackTimeframeToggle('Property Taxes', fromTimeframe, 'monthly', property.id, calculatorMode)
+                    }
+                  }}
+                  className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
+                    property.taxTimeframe === 'monthly'
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  Monthly
+                </button>
+              </div>
+            </div>
+            <input
+              type="text"
+              value={formatNumber(property.taxTimeframe === 'monthly' ? (property.annualTaxes || 0) / 12 : (property.annualTaxes || 0))}
+              onChange={(e) => {
+                const inputValue = parseFloat(e.target.value.replace(/,/g, '')) || 0
+                // Convert to annual if input is monthly
+                const annualValue = property.taxTimeframe === 'monthly' ? inputValue * 12 : inputValue
+                handleInputChange('annualTaxes', annualValue)
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              placeholder={property.taxTimeframe === 'monthly' ? 'Monthly property taxes' : 'Annual property taxes'}
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              {property.taxTimeframe === 'monthly' ? 'Monthly amount' : 'Annual amount'}
+            </p>
+          </div>
+          
+          {/* Insurance */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-medium text-gray-600">Property Insurance</label>
+              <div className="flex rounded-md shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const fromTimeframe = property.insuranceTimeframe
+                    handleSelectChange('insuranceTimeframe', 'annual')
+                    if (fromTimeframe !== 'annual') {
+                      trackTimeframeToggle('Property Insurance', fromTimeframe, 'annual', property.id, calculatorMode)
+                    }
+                  }}
+                  className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
+                    property.insuranceTimeframe === 'annual'
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  Annual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const fromTimeframe = property.insuranceTimeframe
+                    handleSelectChange('insuranceTimeframe', 'monthly')
+                    if (fromTimeframe !== 'monthly') {
+                      trackTimeframeToggle('Property Insurance', fromTimeframe, 'monthly', property.id, calculatorMode)
+                    }
+                  }}
+                  className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
+                    property.insuranceTimeframe === 'monthly'
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  Monthly
+                </button>
+              </div>
+            </div>
+            <input
+              type="text"
+              value={formatNumber(property.insuranceTimeframe === 'monthly' ? (property.annualInsurance || 0) / 12 : (property.annualInsurance || 0))}
+              onChange={(e) => {
+                const inputValue = parseFloat(e.target.value.replace(/,/g, '')) || 0
+                // Convert to annual if input is monthly
+                const annualValue = property.insuranceTimeframe === 'monthly' ? inputValue * 12 : inputValue
+                handleInputChange('annualInsurance', annualValue)
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              placeholder={property.insuranceTimeframe === 'monthly' ? 'Monthly insurance' : 'Annual insurance'}
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              {property.insuranceTimeframe === 'monthly' ? 'Monthly amount' : 'Annual amount'}
+            </p>
+          </div>
+          
+          {/* HOA Fees */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-medium text-gray-600">HOA Fees</label>
+              <div className="flex rounded-md shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const fromTimeframe = property.hoaInputType
+                    handleSelectChange('hoaInputType', 'annual')
+                    if (fromTimeframe !== 'annual') {
+                      trackTimeframeToggle('HOA Fees', fromTimeframe, 'annual', property.id, calculatorMode)
+                    }
+                  }}
+                  className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
+                    property.hoaInputType === 'annual'
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  Annual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const fromTimeframe = property.hoaInputType
+                    handleSelectChange('hoaInputType', 'monthly')
+                    if (fromTimeframe !== 'monthly') {
+                      trackTimeframeToggle('HOA Fees', fromTimeframe, 'monthly', property.id, calculatorMode)
+                    }
+                  }}
+                  className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
+                    property.hoaInputType === 'monthly'
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  Monthly
+                </button>
+              </div>
+            </div>
+            <input
+              type="text"
+              value={formatNumber(property.hoaFees || 0)}
+              onChange={(e) => {
+                const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
+                handleInputChange('hoaFees', value)
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              placeholder="HOA fees"
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              {property.hoaInputType === 'monthly' ? 'Monthly amount' : 'Annual amount'}
+            </p>
             <div className="flex items-center">
               <input
                 type="checkbox"
-                id="useHomeSaleProceeds"
-                checked={property.useHomeSaleProceedsAsDownPayment}
-                onChange={(e) => handleToggle('useHomeSaleProceedsAsDownPayment', e.target.checked)}
+                id="includeHoaFees"
+                checked={property.includeHoaFees}
+                onChange={(e) => handleToggle('includeHoaFees', e.target.checked)}
                 className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
               />
-              <label htmlFor="useHomeSaleProceeds" className="ml-2 block text-sm text-gray-900">
-                Use Home Sale Proceeds as Down Payment
+              <label htmlFor="includeHoaFees" className="ml-2 block text-sm text-gray-900">
+                Include in DSCR
               </label>
             </div>
-            
-            {property.useHomeSaleProceedsAsDownPayment && (
-              <div className="ml-6 space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Select Home Sale Property</label>
-                  <select
-                    value={property.selectedHomeSalePropertyId || ''}
-                    onChange={(e) => handleSelectChange('selectedHomeSalePropertyId', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 h-10 bg-white"
-                  >
-                    <option value="">-- Select a property --</option>
-                    {availableHomeSaleProperties.map((prop) => (
-                      <option key={prop.id} value={prop.id}>
-                        {prop.name || prop.streetAddress} (${(prop.salePrice || 0).toLocaleString()})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                {property.selectedHomeSalePropertyId && (
-                  <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-md">
-                    Available proceeds: {formatCurrency(getHomeSaleProceeds())}
-                  </div>
-                )}
+          </div>
+          
+          {/* Property Management */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-medium text-gray-600">Property Management</label>
+              <div className="flex rounded-md shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const fromType = property.propertyManagementInputType
+                    handleSelectChange('propertyManagementInputType', 'dollar')
+                    if (fromType !== 'dollar') {
+                      trackInputTypeToggle('Property Management Fee', fromType, 'dollar', property.id, calculatorMode)
+                    }
+                  }}
+                  className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
+                    property.propertyManagementInputType === 'dollar'
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  $
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const fromType = property.propertyManagementInputType
+                    handleSelectChange('propertyManagementInputType', 'percentage')
+                    if (fromType !== 'percentage') {
+                      trackInputTypeToggle('Property Management Fee', fromType, 'percentage', property.id, calculatorMode)
+                    }
+                  }}
+                  className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
+                    property.propertyManagementInputType === 'percentage'
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  %
+                </button>
               </div>
-            )}
+            </div>
+            <input
+              type="number"
+              step="0.01"
+              value={property.propertyManagementFee || ''}
+              onChange={(e) => handleInputChange('propertyManagementFee', parseFloat(e.target.value) || 0)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              placeholder="Property management fee"
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              {property.propertyManagementInputType === 'dollar' ? 'Dollar amount' : 'Percentage of rent'}
+            </p>
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="includePropertyManagement"
+                checked={property.includePropertyManagement}
+                onChange={(e) => handleToggle('includePropertyManagement', e.target.checked)}
+                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+              />
+              <label htmlFor="includePropertyManagement" className="ml-2 block text-sm text-gray-900">
+                Include in DSCR
+              </label>
+            </div>
+          </div>
+          
+          {/* Maintenance Reserves */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-medium text-gray-600">Maintenance Reserves</label>
+              <div className="flex rounded-md shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const fromType = property.maintenanceInputType
+                    handleSelectChange('maintenanceInputType', 'dollar')
+                    if (fromType !== 'dollar') {
+                      trackInputTypeToggle('Maintenance Reserve', fromType, 'dollar', property.id, calculatorMode)
+                    }
+                  }}
+                  className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
+                    property.maintenanceInputType === 'dollar'
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  $
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const fromType = property.maintenanceInputType
+                    handleSelectChange('maintenanceInputType', 'percentage')
+                    if (fromType !== 'percentage') {
+                      trackInputTypeToggle('Maintenance Reserve', fromType, 'percentage', property.id, calculatorMode)
+                    }
+                  }}
+                  className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
+                    property.maintenanceInputType === 'percentage'
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  %
+                </button>
+              </div>
+            </div>
+            <input
+              type="number"
+              step="0.01"
+              value={property.maintenanceReserve || ''}
+              onChange={(e) => handleInputChange('maintenanceReserve', parseFloat(e.target.value) || 0)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              placeholder="Maintenance reserve"
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              {property.maintenanceInputType === 'dollar' ? 'Dollar amount' : 'Percentage of rent'}
+            </p>
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="includeMaintenance"
+                checked={property.includeMaintenance}
+                onChange={(e) => handleToggle('includeMaintenance', e.target.checked)}
+                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+              />
+              <label htmlFor="includeMaintenance" className="ml-2 block text-sm text-gray-900">
+                Include in DSCR
+              </label>
+            </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Home Sale Property Inputs */}
       {calculatorMode === 'homeSale' && (
@@ -311,19 +619,7 @@ export default function GlobalInputsPanel({
               />
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Original Purchase Price</label>
-              <input
-                type="text"
-                value={formatNumber(property.originalPurchasePrice || 0)}
-                onChange={(e) => {
-                  const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
-                  handleInputChange('originalPurchasePrice', value)
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                placeholder="Original purchase price"
-              />
-            </div>
+
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Outstanding Mortgage Balance</label>
@@ -434,138 +730,17 @@ export default function GlobalInputsPanel({
         </div>
       )}
 
-      {/* Taxes & Insurance - Only for Investment Properties */}
-      {calculatorMode === 'investment' && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">Taxes & Insurance</h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-medium text-gray-600">Property Taxes</label>
-              <div className="flex rounded-md shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const fromTimeframe = property.taxTimeframe
-                    handleSelectChange('taxTimeframe', 'annual')
-                    if (fromTimeframe !== 'annual') {
-                      trackTimeframeToggle('Property Taxes', fromTimeframe, 'annual', property.id, calculatorMode)
-                    }
-                  }}
-                  className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
-                    property.taxTimeframe === 'annual'
-                      ? 'bg-primary-600 text-white border-primary-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  Annual
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const fromTimeframe = property.taxTimeframe
-                    handleSelectChange('taxTimeframe', 'monthly')
-                    if (fromTimeframe !== 'monthly') {
-                      trackTimeframeToggle('Property Taxes', fromTimeframe, 'monthly', property.id, calculatorMode)
-                    }
-                  }}
-                  className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
-                    property.taxTimeframe === 'monthly'
-                      ? 'bg-primary-600 text-white border-primary-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  Monthly
-                </button>
-              </div>
-            </div>
-            <input
-              type="text"
-              value={formatNumber(property.taxTimeframe === 'monthly' ? (property.annualTaxes || 0) / 12 : (property.annualTaxes || 0))}
-              onChange={(e) => {
-                const inputValue = parseFloat(e.target.value.replace(/,/g, '')) || 0
-                // Convert to annual if input is monthly
-                const annualValue = property.taxTimeframe === 'monthly' ? inputValue * 12 : inputValue
-                handleInputChange('annualTaxes', annualValue)
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-              placeholder={property.taxTimeframe === 'monthly' ? 'Monthly property taxes' : 'Annual property taxes'}
-            />
-            <p className="text-sm text-gray-500 mt-1">
-              {property.taxTimeframe === 'monthly' ? 'Monthly amount' : 'Annual amount'}
-            </p>
-          </div>
-          
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-medium text-gray-600">Property Insurance</label>
-              <div className="flex rounded-md shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const fromTimeframe = property.insuranceTimeframe
-                    handleSelectChange('insuranceTimeframe', 'annual')
-                    if (fromTimeframe !== 'annual') {
-                      trackTimeframeToggle('Property Insurance', fromTimeframe, 'annual', property.id, calculatorMode)
-                    }
-                  }}
-                  className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
-                    property.insuranceTimeframe === 'annual'
-                      ? 'bg-primary-600 text-white border-primary-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  Annual
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const fromTimeframe = property.insuranceTimeframe
-                    handleSelectChange('insuranceTimeframe', 'monthly')
-                    if (fromTimeframe !== 'monthly') {
-                      trackTimeframeToggle('Property Insurance', fromTimeframe, 'monthly', property.id, calculatorMode)
-                    }
-                  }}
-                  className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
-                    property.insuranceTimeframe === 'monthly'
-                      ? 'bg-primary-600 text-white border-primary-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  Monthly
-                </button>
-              </div>
-            </div>
-            <input
-              type="text"
-              value={formatNumber(property.insuranceTimeframe === 'monthly' ? (property.annualInsurance || 0) / 12 : (property.annualInsurance || 0))}
-              onChange={(e) => {
-                const inputValue = parseFloat(e.target.value.replace(/,/g, '')) || 0
-                // Convert to annual if input is monthly
-                const annualValue = property.insuranceTimeframe === 'monthly' ? inputValue * 12 : inputValue
-                handleInputChange('annualInsurance', annualValue)
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-              placeholder={property.insuranceTimeframe === 'monthly' ? 'Monthly insurance' : 'Annual insurance'}
-            />
-            <p className="text-sm text-gray-500 mt-1">
-              {property.insuranceTimeframe === 'monthly' ? 'Monthly amount' : 'Annual amount'}
-            </p>
-          </div>
-        </div>
-      </div>
-      )}
 
-      {/* Investment Property Specific Inputs */}
+
+      {/* Income */}
       {calculatorMode === 'investment' && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">Rental Income & Expenses</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Income</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-medium text-gray-600">Gross Rental Income</label>
+                <label className="block text-xs font-medium text-gray-600">Rental Income</label>
                 <div className="flex rounded-md shadow-sm">
                   <button
                     type="button"
@@ -619,7 +794,7 @@ export default function GlobalInputsPanel({
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Rental Income Discount (%)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Income Discount (%)</label>
               <input
                 type="number"
                 step="0.01"
@@ -628,211 +803,9 @@ export default function GlobalInputsPanel({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 placeholder="Vacancy/maintenance discount"
               />
-            </div>
-          </div>
-
-          {/* Operating Expenses */}
-          <div className="space-y-4">
-            <h4 className="text-md font-medium text-gray-900">Operating Expenses</h4>
-            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
-              Note: All expenses are shown in the breakdown below. Checkboxes control whether they are included in DSCR calculations.
-            </p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-medium text-gray-600">Property Management Fee</label>
-                  <div className="flex rounded-md shadow-sm">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const fromType = property.propertyManagementInputType
-                        handleSelectChange('propertyManagementInputType', 'dollar')
-                        if (fromType !== 'dollar') {
-                          trackInputTypeToggle('Property Management Fee', fromType, 'dollar', property.id, calculatorMode)
-                        }
-                      }}
-                      className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
-                        property.propertyManagementInputType === 'dollar'
-                          ? 'bg-primary-600 text-white border-primary-600'
-                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      $
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const fromType = property.propertyManagementInputType
-                        handleSelectChange('propertyManagementInputType', 'percentage')
-                        if (fromType !== 'percentage') {
-                          trackInputTypeToggle('Property Management Fee', fromType, 'percentage', property.id, calculatorMode)
-                        }
-                      }}
-                      className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
-                        property.propertyManagementInputType === 'percentage'
-                          ? 'bg-primary-600 text-white border-primary-600'
-                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      %
-                    </button>
-                  </div>
-                </div>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={property.propertyManagementFee || ''}
-                  onChange={(e) => handleInputChange('propertyManagementFee', parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                  placeholder="Property management fee"
-                />
-                <p className="text-sm text-gray-500 mt-1">
-                  {property.propertyManagementInputType === 'dollar' ? 'Dollar amount' : 'Percentage of rent'}
-                </p>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="includePropertyManagement"
-                    checked={property.includePropertyManagement}
-                    onChange={(e) => handleToggle('includePropertyManagement', e.target.checked)}
-                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="includePropertyManagement" className="ml-2 block text-sm text-gray-900">
-                    Include in DSCR
-                  </label>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-medium text-gray-600">Maintenance Reserve</label>
-                  <div className="flex rounded-md shadow-sm">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const fromType = property.maintenanceInputType
-                        handleSelectChange('maintenanceInputType', 'dollar')
-                        if (fromType !== 'dollar') {
-                          trackInputTypeToggle('Maintenance Reserve', fromType, 'dollar', property.id, calculatorMode)
-                        }
-                      }}
-                      className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
-                        property.maintenanceInputType === 'dollar'
-                          ? 'bg-primary-600 text-white border-primary-600'
-                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      $
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const fromType = property.maintenanceInputType
-                        handleSelectChange('maintenanceInputType', 'percentage')
-                        if (fromType !== 'percentage') {
-                          trackInputTypeToggle('Maintenance Reserve', fromType, 'percentage', property.id, calculatorMode)
-                        }
-                      }}
-                      className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
-                        property.maintenanceInputType === 'percentage'
-                          ? 'bg-primary-600 text-white border-primary-600'
-                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      %
-                    </button>
-                  </div>
-                </div>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={property.maintenanceReserve || ''}
-                  onChange={(e) => handleInputChange('maintenanceReserve', parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                  placeholder="Maintenance reserve"
-                />
-                <p className="text-sm text-gray-500 mt-1">
-                  {property.maintenanceInputType === 'dollar' ? 'Dollar amount' : 'Percentage of rent'}
-                </p>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="includeMaintenance"
-                    checked={property.includeMaintenance}
-                    onChange={(e) => handleToggle('includeMaintenance', e.target.checked)}
-                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="includeMaintenance" className="ml-2 block text-sm text-gray-900">
-                    Include in DSCR
-                  </label>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-medium text-gray-600">HOA Fees</label>
-                  <div className="flex rounded-md shadow-sm">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const fromTimeframe = property.hoaInputType
-                        handleSelectChange('hoaInputType', 'annual')
-                        if (fromTimeframe !== 'annual') {
-                          trackTimeframeToggle('HOA Fees', fromTimeframe, 'annual', property.id, calculatorMode)
-                        }
-                      }}
-                      className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
-                        property.hoaInputType === 'annual'
-                          ? 'bg-primary-600 text-white border-primary-600'
-                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      Annual
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const fromTimeframe = property.hoaInputType
-                        handleSelectChange('hoaInputType', 'monthly')
-                        if (fromTimeframe !== 'monthly') {
-                          trackTimeframeToggle('HOA Fees', fromTimeframe, 'monthly', property.id, calculatorMode)
-                        }
-                      }}
-                      className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
-                        property.hoaInputType === 'monthly'
-                          ? 'bg-primary-600 text-white border-primary-600'
-                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      Monthly
-                    </button>
-                  </div>
-                </div>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={property.hoaFees || ''}
-                  onChange={(e) => handleInputChange('hoaFees', parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                  placeholder="HOA fees"
-                />
-                <p className="text-sm text-gray-500 mt-1">
-                  {property.hoaInputType === 'monthly' ? 'Monthly amount' : 'Annual amount'}
-                </p>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="includeHoaFees"
-                    checked={property.includeHoaFees}
-                    onChange={(e) => handleToggle('includeHoaFees', e.target.checked)}
-                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="includeHoaFees" className="ml-2 block text-sm text-gray-900">
-                    Include in DSCR
-                  </label>
-                </div>
-              </div>
+              <p className="text-sm text-gray-500 mt-1">
+                Used for DSCR calculations only. Does not impact monthly cash flow.
+              </p>
             </div>
           </div>
         </div>

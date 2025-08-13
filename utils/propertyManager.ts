@@ -18,7 +18,7 @@ export function createProperty(
     
     // Shared property details
     purchasePrice: 0,
-    originalPurchasePrice: 0,
+    originalPurchasePrice: undefined,
     yearBought: yearBought || undefined,
     propertyType: 'single-family',
     
@@ -45,7 +45,7 @@ export function createProperty(
     // Investment data
     grossRentalIncome: 0,
     rentalIncomeInputType: 'monthly',
-    rentalIncomeDiscount: 0,
+    rentalIncomeDiscount: 25,
     propertyManagementFee: 0,
     propertyManagementInputType: 'dollar',
     includePropertyManagement: false,
@@ -188,7 +188,7 @@ function migrateLegacyProperty(legacyProperty: any): Property {
     
     // Shared property details
     purchasePrice: legacyProperty.purchasePrice || 0,
-    originalPurchasePrice: legacyProperty.originalPurchasePrice || 0,
+    originalPurchasePrice: legacyProperty.originalPurchasePrice || legacyProperty.purchasePrice || 0,
     yearBought: legacyProperty.yearBuilt || legacyProperty.yearBought,
     propertyType: legacyProperty.propertyType || 'single-family',
     
@@ -215,7 +215,7 @@ function migrateLegacyProperty(legacyProperty: any): Property {
     // Investment data
     grossRentalIncome: legacyProperty.grossRentalIncome || 0,
     rentalIncomeInputType: legacyProperty.rentalIncomeInputType || 'monthly',
-    rentalIncomeDiscount: legacyProperty.rentalIncomeDiscount || 0,
+    rentalIncomeDiscount: legacyProperty.rentalIncomeDiscount || 25,
     propertyManagementFee: legacyProperty.propertyManagementFee || 0,
     propertyManagementInputType: legacyProperty.propertyManagementInputType || 'dollar',
     includePropertyManagement: legacyProperty.includePropertyManagement || false,
