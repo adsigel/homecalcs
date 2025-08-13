@@ -15,7 +15,7 @@ export default function ExportButton({ property }: ExportButtonProps) {
       ['Property Name', property.name || 'Unnamed Property'],
       ['Street Address', property.streetAddress || ''],
       ['Property Type', property.propertyType || ''],
-      ['Year Built', property.yearBuilt || ''],
+      ['Year Bought', property.yearBought || ''],
       ['Purchase Price', property.purchasePrice || ''],
       ['Original Purchase Price', property.originalPurchasePrice || ''],
       ['Market Value', property.marketValue || ''],
