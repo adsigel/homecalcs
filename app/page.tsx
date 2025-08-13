@@ -12,6 +12,7 @@ import GlobalInputsPanel from '@/components/GlobalInputsPanel'
 import PITICalculator from '@/components/PITICalculator'
 import DSCRCalculator from '@/components/DSCRCalculator'
 import HomeSaleCalculator from '@/components/HomeSaleCalculator'
+import FiveYearAnalysis from '@/components/FiveYearAnalysis'
 import PropertyManager from '@/components/PropertyManager'
 import AmplitudeProvider from '@/components/AmplitudeProvider'
 import EmptyState from '@/components/EmptyState'
@@ -20,14 +21,13 @@ export default function Home() {
   const [isHydrated, setIsHydrated] = useState(false)
   const [propertiesCollection, setPropertiesCollection] = useState<PropertiesCollection>({ properties: [], activePropertyId: null })
   const [activeProperty, setActiveProperty] = useState<Property | null>(null)
-  const [calculatorMode, setCalculatorMode] = useState<'investment' | 'homeSale'>('investment')
+  const [calculatorMode, setCalculatorMode] = useState<'investment' | 'homeSale' | 'fiveYearAnalysis'>('investment')
   
   // Modal states
   const [showNewPropertyDialog, setShowNewPropertyDialog] = useState(false)
   const [showManageModal, setShowManageModal] = useState(false)
   const [showSaveDialog, setShowSaveDialog] = useState(false)
   const [showRenameModal, setShowRenameModal] = useState(false)
-  const [propertyName, setPropertyName] = useState('')
   const [streetAddress, setStreetAddress] = useState('')
   const [propertyType, setPropertyType] = useState<'investment' | 'homeSale'>('investment')
   const [marketValue, setMarketValue] = useState('')
@@ -129,7 +129,7 @@ export default function Home() {
   }
 
   // Handle calculator mode changes
-  const handleCalculatorModeChange = (mode: 'investment' | 'homeSale') => {
+  const handleCalculatorModeChange = (mode: 'investment' | 'homeSale' | 'fiveYearAnalysis') => {
     console.log('🔄 Attempting to change calculator mode to:', mode)
     console.log('📊 Current active property:', activeProperty)
     console.log('🔍 Property activeMode before change:', activeProperty?.activeMode)
@@ -179,7 +179,6 @@ export default function Home() {
   // Show new property dialog
   const handleShowNewPropertyDialog = () => {
     setStreetAddress(activeProperty?.streetAddress || '')
-    setPropertyName('')
     setPropertyType('investment')
     setShowNewPropertyDialog(true)
   }
@@ -192,7 +191,6 @@ export default function Home() {
   // Show save dialog
   const handleShowSaveDialog = () => {
     if (activeProperty) {
-      setPropertyName(activeProperty.name)
       setStreetAddress(activeProperty.streetAddress)
     }
     setShowSaveDialog(true)
@@ -200,17 +198,15 @@ export default function Home() {
 
   // Show rename modal
   const handleShowRenameModal = (property: Property) => {
-    setPropertyToRename(property)
-    setPropertyName(property.name)
     setShowRenameModal(true)
   }
 
   // Create new property
   const createNewProperty = () => {
-    if (!propertyName.trim() || !streetAddress.trim()) return
+    if (!streetAddress.trim()) return
 
     const newProperty = createProperty(
-      propertyName.trim(), 
+      streetAddress.trim(), 
       streetAddress.trim(), 
       propertyType,
       parseFloat(marketValue.replace(/,/g, '')) || 0,
@@ -227,7 +223,6 @@ export default function Home() {
     setShowNewPropertyDialog(false)
     
     // Reset form fields
-    setPropertyName('')
     setStreetAddress('')
     setMarketValue('')
     setYearBought('')
@@ -248,9 +243,9 @@ export default function Home() {
 
   // Save current property
   const saveCurrentProperty = () => {
-    if (!activeProperty || !propertyName.trim()) return
+    if (!activeProperty || !streetAddress.trim()) return
 
-    const updatedProperty = { ...activeProperty, name: propertyName.trim() }
+    const updatedProperty = { ...activeProperty, name: streetAddress.trim() }
     const updatedCollection = {
       ...propertiesCollection,
       properties: propertiesCollection.properties.map(p => 
@@ -269,9 +264,9 @@ export default function Home() {
 
   // Rename property
   const handleRenameProperty = () => {
-    if (!propertyToRename || !propertyName.trim()) return
+    if (!propertyToRename || !streetAddress.trim()) return
 
-    const updatedProperty = { ...propertyToRename, name: propertyName.trim() }
+    const updatedProperty = { ...propertyToRename, name: streetAddress.trim() }
     const updatedCollection = {
       ...propertiesCollection,
       properties: propertiesCollection.properties.map(p => 
@@ -283,7 +278,7 @@ export default function Home() {
     trackPropertyRenamed(
       propertyToRename.id,
       propertyToRename.name || 'Unnamed Property',
-      propertyName.trim()
+      streetAddress.trim()
     )
     
     setPropertiesCollection(updatedCollection)
@@ -406,13 +401,13 @@ export default function Home() {
         }}
       />
       
-      <main className="max-w-7xl xl:max-w-[1400px] 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl xl:max-w-[1400px] 2xl:max-w-[1600px] mx-auto px-6 sm:px-8 lg:px-12 xl:px-16 py-8">
         {!activeProperty ? (
           <EmptyState onShowNewPropertyDialog={handleShowNewPropertyDialog} />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Left Column - Calculator Inputs */}
-          <div>
+          <div className="lg:col-span-1">
             {activeProperty && (
               <>
                 <div className="flex items-center justify-between mb-4">
@@ -428,10 +423,10 @@ export default function Home() {
                       trackSaveButtonClicked(activeProperty.id, calculatorMode, true)
                       handleSaveProperty()
                     }}
-                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+                    className="px-4 py-2 bg-green-600 text-white text-[80%] rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
                     title="Save all changes to this property"
                   >
-                    💾 Save Changes
+                    Save
                   </button>
                 </div>
                 
@@ -441,7 +436,7 @@ export default function Home() {
                   <div className="flex gap-3">
                     <button
                       onClick={() => handleCalculatorModeChange('investment')}
-                      className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                      className={`px-4 py-2 rounded-md font-medium text-[90%] transition-colors ${
                         calculatorMode === 'investment'
                           ? 'bg-primary-600 text-white'
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -451,13 +446,23 @@ export default function Home() {
                     </button>
                     <button
                       onClick={() => handleCalculatorModeChange('homeSale')}
-                      className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                      className={`px-4 py-2 rounded-md font-medium text-[90%] transition-colors ${
                         calculatorMode === 'homeSale'
                           ? 'bg-primary-600 text-white'
                           : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
                         }`}
                     >
                       Sale Analysis
+                    </button>
+                    <button
+                      onClick={() => handleCalculatorModeChange('fiveYearAnalysis')}
+                      className={`px-4 py-2 rounded-md font-medium text-[90%] transition-colors ${
+                        calculatorMode === 'fiveYearAnalysis'
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
+                        }`}
+                    >
+                      5-Year Analysis
                     </button>
                   </div>
                 </div>
@@ -480,7 +485,7 @@ export default function Home() {
 
           {/* Right Column - Calculator Results */}
           {activeProperty && (
-            <div>
+            <div className="lg:col-span-2">
               <div className="mb-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-2">Calculation Results</h2>
                 <p className="text-sm text-gray-600">View your financial analysis and projections</p>
@@ -508,6 +513,9 @@ export default function Home() {
                     propertiesCollection={propertiesCollection}
                   />
                 )}
+                {calculatorMode === 'fiveYearAnalysis' && (
+                  <FiveYearAnalysis propertiesCollection={propertiesCollection} />
+                )}
               </div>
             </div>
           )}
@@ -521,16 +529,6 @@ export default function Home() {
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <h3 className="text-lg font-semibold mb-4">Create New Property</h3>
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Property Name</label>
-                <input
-                  type="text"
-                  value={propertyName}
-                  onChange={(e) => setPropertyName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Enter property name"
-                />
-              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
                 <input
@@ -579,7 +577,6 @@ export default function Home() {
                 onClick={() => {
                   setShowNewPropertyDialog(false)
                   // Reset form fields
-                  setPropertyName('')
                   setStreetAddress('')
                   setMarketValue('')
                   setYearBought('')
@@ -591,7 +588,7 @@ export default function Home() {
               </button>
               <button
                 onClick={createNewProperty}
-                disabled={!propertyName.trim() || !streetAddress.trim()}
+                disabled={!streetAddress.trim()}
                 className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
               >
                 Create Property
@@ -619,16 +616,6 @@ export default function Home() {
             <h3 className="text-lg font-semibold mb-4">Save Property</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Property Name</label>
-                <input
-                  type="text"
-                  value={propertyName}
-                  onChange={(e) => setPropertyName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Enter property name"
-                />
-              </div>
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
                 <input
                   type="text"
@@ -649,7 +636,6 @@ export default function Home() {
               </button>
               <button
                 onClick={saveCurrentProperty}
-                disabled={!propertyName.trim()}
                 className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
               >
                 Save Property
@@ -669,8 +655,8 @@ export default function Home() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Property Name</label>
                 <input
                   type="text"
-                  value={propertyName}
-                  onChange={(e) => setPropertyName(e.target.value)}
+                  value={streetAddress}
+                  onChange={(e) => setStreetAddress(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Enter new property name"
                 />
@@ -685,7 +671,6 @@ export default function Home() {
               </button>
               <button
                 onClick={handleRenameProperty}
-                disabled={!propertyName.trim()}
                 className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
               >
                 Rename Property

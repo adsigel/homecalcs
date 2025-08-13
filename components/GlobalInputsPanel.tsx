@@ -13,7 +13,7 @@ interface GlobalInputsPanelProps {
   propertiesCollection: PropertiesCollection
   onPropertiesCollectionChange: (updatedCollection: PropertiesCollection) => void
   onShowNewPropertyDialog: () => void
-  calculatorMode: 'investment' | 'homeSale'
+  calculatorMode: 'investment' | 'homeSale' | 'fiveYearAnalysis'
   onPropertySelect: (property: Property) => void
 }
 
@@ -340,27 +340,58 @@ export default function GlobalInputsPanel({
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Realtor Commission</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={formatNumber(property.realtorCommission || 0)}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
-                    handleInputChange('realtorCommission', value)
-                  }}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                  placeholder="Realtor commission"
-                />
-                <select
-                  value={property.realtorCommissionInputType}
-                  onChange={(e) => handleSelectChange('realtorCommissionInputType', e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 h-10 bg-white"
-                >
-                  <option value="dollar">$</option>
-                  <option value="percentage">%</option>
-                </select>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-medium text-gray-600">Realtor Commission</label>
+                <div className="flex rounded-md shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const fromType = property.realtorCommissionInputType
+                      handleSelectChange('realtorCommissionInputType', 'dollar')
+                      if (fromType !== 'dollar') {
+                        trackInputTypeToggle('Realtor Commission', fromType, 'dollar', property.id, calculatorMode)
+                      }
+                    }}
+                    className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
+                      property.realtorCommissionInputType === 'dollar'
+                        ? 'bg-primary-600 text-white border-primary-600'
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    $
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const fromType = property.realtorCommissionInputType
+                      handleSelectChange('realtorCommissionInputType', 'percentage')
+                      if (fromType !== 'percentage') {
+                        trackInputTypeToggle('Realtor Commission', fromType, 'percentage', property.id, calculatorMode)
+                      }
+                    }}
+                    className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
+                      property.realtorCommissionInputType === 'percentage'
+                        ? 'bg-primary-600 text-white border-primary-600'
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    %
+                  </button>
+                </div>
               </div>
+              <input
+                type="text"
+                value={formatNumber(property.realtorCommission || 0)}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
+                  handleInputChange('realtorCommission', value)
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                placeholder="Realtor commission"
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                {property.realtorCommissionInputType === 'dollar' ? 'Dollar amount' : 'Percentage of sale price'}
+              </p>
             </div>
             
             <div>

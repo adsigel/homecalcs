@@ -28,10 +28,10 @@ export interface BaseProperty {
   marketValue: number
   
   // Calculator modes this property supports
-  supportedModes: ('investment' | 'homeSale')[]
+  supportedModes: ('investment' | 'homeSale' | 'fiveYearAnalysis')[]
   
   // Active calculator mode for this property
-  activeMode: 'investment' | 'homeSale'
+  activeMode: 'investment' | 'homeSale' | 'fiveYearAnalysis'
 }
 
 // Investment-specific data

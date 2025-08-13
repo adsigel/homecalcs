@@ -83,12 +83,12 @@ export function createHomeSaleProperty(name: string, streetAddress: string): Pro
 }
 
 // Add a new calculator mode to an existing property
-export function addCalculatorMode(property: Property, mode: 'investment' | 'homeSale'): Property {
+export function addCalculatorMode(property: Property, mode: 'investment' | 'homeSale' | 'fiveYearAnalysis'): Property {
   if (!property || !property.supportedModes) {
     // If property doesn't have supportedModes, initialize it
     return {
       ...property,
-      supportedModes: [mode],
+      supportedModes: [mode, 'fiveYearAnalysis'],
       activeMode: mode
     }
   }
@@ -103,12 +103,12 @@ export function addCalculatorMode(property: Property, mode: 'investment' | 'home
 }
 
 // Switch calculator mode for a property
-export function switchCalculatorMode(property: Property, mode: 'investment' | 'homeSale'): Property {
+export function switchCalculatorMode(property: Property, mode: 'investment' | 'homeSale' | 'fiveYearAnalysis'): Property {
   if (!property || !property.supportedModes) {
     // If property doesn't have supportedModes, initialize it
     return {
       ...property,
-      supportedModes: [mode],
+      supportedModes: [mode, 'fiveYearAnalysis'],
       activeMode: mode
     }
   }
@@ -123,7 +123,7 @@ export function switchCalculatorMode(property: Property, mode: 'investment' | 'h
 }
 
 // Check if property supports a specific calculator mode
-export function supportsCalculatorMode(property: Property, mode: 'investment' | 'homeSale'): boolean {
+export function supportsCalculatorMode(property: Property, mode: 'investment' | 'homeSale' | 'fiveYearAnalysis'): boolean {
   if (!property || !property.supportedModes) {
     return false
   }
