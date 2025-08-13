@@ -17,7 +17,7 @@ export default function ExportButton({ property }: ExportButtonProps) {
       ['Property Type', property.propertyType || ''],
       ['Year Bought', property.yearBought || ''],
       ['Purchase Price', property.purchasePrice || ''],
-      ['Original Purchase Price', property.originalPurchasePrice || ''],
+              ['Original Purchase Price', property.originalPurchasePrice || property.purchasePrice || ''],
       ['Market Value', property.marketValue || ''],
       ['Active Calculator Mode', property.activeMode || ''],
       ['Supported Modes', property.supportedModes.join(', ') || ''],

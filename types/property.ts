@@ -7,7 +7,7 @@ export interface BaseProperty {
   
   // Shared property details
   purchasePrice: number
-  originalPurchasePrice: number
+  originalPurchasePrice?: number
   yearBought?: number
   propertyType: 'single-family' | 'multi-family' | 'condo' | 'townhouse' | 'other'
   

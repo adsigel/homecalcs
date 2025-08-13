@@ -198,6 +198,8 @@ export default function Home() {
 
   // Show rename modal
   const handleShowRenameModal = (property: Property) => {
+    setPropertyToRename(property)
+    setStreetAddress(property.name)
     setShowRenameModal(true)
   }
 
@@ -636,6 +638,7 @@ export default function Home() {
               </button>
               <button
                 onClick={saveCurrentProperty}
+                disabled={!streetAddress.trim()}
                 className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
               >
                 Save Property
@@ -671,6 +674,7 @@ export default function Home() {
               </button>
               <button
                 onClick={handleRenameProperty}
+                disabled={!streetAddress.trim()}
                 className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
               >
                 Rename Property
