@@ -447,6 +447,7 @@ export default function Home() {
                       property={activeProperty}
                       onUpdate={handlePropertyUpdate}
                       calculatorMode={calculatorMode}
+                      propertiesCollection={propertiesCollection}
                     />
                   </>
                 )}
@@ -486,6 +487,7 @@ export default function Home() {
                   onChange={(e) => setStreetAddress(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Enter street address"
+                  autoComplete="off"
                 />
               </div>
               <div>
@@ -554,6 +556,7 @@ export default function Home() {
                   onChange={(e) => setStreetAddress(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Enter street address"
+                  autoComplete="off"
                 />
               </div>
             </div>

@@ -112,11 +112,11 @@ export default function PITICalculator({ property, onUpdate, propertiesCollectio
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Loan Amount:</span>
-                  <span className="font-medium">{formatCurrency(property.purchasePrice - property.downPayment)}</span>
+                  <span className="font-medium">{formatCurrency(property.purchasePrice - pitiCalculation.adjustedDownPayment)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Down Payment:</span>
-                  <span className="font-medium">{formatCurrency(property.downPayment)}</span>
+                  <span className="font-medium">{formatCurrency(pitiCalculation.adjustedDownPayment)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Interest Rate:</span>

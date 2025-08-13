@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useMemo, useState } from 'react'
-import { Property } from '@/types/property'
+import { Property, PropertiesCollection } from '@/types/property'
 import { calculateDSCR, calculateCapRate, formatCurrency, formatPercentage, formatNumber } from '@/utils/calculations'
 import { Calculator, DollarSign, TrendingUp, AlertTriangle, Building2, Wrench, Home, Calendar, Clock, Percent } from 'lucide-react'
 
@@ -9,9 +9,10 @@ interface DSCRCalculatorProps {
   property: Property
   onUpdate: (updates: Partial<Property>) => void
   calculatorMode: 'investment' | 'homeSale'
+  propertiesCollection?: PropertiesCollection
 }
 
-export default function DSCRCalculator({ property, onUpdate, calculatorMode }: DSCRCalculatorProps) {
+export default function DSCRCalculator({ property, onUpdate, calculatorMode, propertiesCollection }: DSCRCalculatorProps) {
   // Only show for investment mode
   if (calculatorMode !== 'investment') return null
   
@@ -26,7 +27,7 @@ export default function DSCRCalculator({ property, onUpdate, calculatorMode }: D
     console.log('🧮 DSCR - Calculating PITI for property:', property)
     // Import and use the calculation function directly
     const { calculatePITIWithHomeSaleProceeds } = require('@/utils/calculations')
-    const result = calculatePITIWithHomeSaleProceeds(property, undefined)
+    const result = calculatePITIWithHomeSaleProceeds(property, propertiesCollection)
     console.log('🧮 DSCR - PITI calculation result:', result)
     return result
   }, [property])
@@ -112,13 +113,13 @@ export default function DSCRCalculator({ property, onUpdate, calculatorMode }: D
             <div className="space-y-4">
               <div className="bg-white p-4 rounded-lg border border-green-200">
                 <div className={`text-lg font-semibold ${
-                  (dscrCalculation.grossAnnualRentalIncome - dscrCalculation.dscrExpenses) >= 0 ? 'text-green-600' : 'text-red-600'
+                  (dscrCalculation.grossAnnualRentalIncome - dscrCalculation.annualExpenses.total - dscrCalculation.annualPITI) >= 0 ? 'text-green-600' : 'text-red-600'
                 }`}>
-                  {formatCurrency((dscrCalculation.grossAnnualRentalIncome - dscrCalculation.dscrExpenses) / 12)}
+                  {formatCurrency((dscrCalculation.grossAnnualRentalIncome - dscrCalculation.annualExpenses.total - dscrCalculation.annualPITI) / 12)}
                 </div>
                 <div className="text-sm text-green-600">Monthly Cash Flow</div>
                 <div className="text-xs text-gray-500 mt-1">
-                  Net Income - Expenses
+                  Net Income - All Expenses
                 </div>
               </div>
             </div>
@@ -284,6 +285,22 @@ export default function DSCRCalculator({ property, onUpdate, calculatorMode }: D
               </div>
               <p className="text-xs text-primary-700 mt-1">
                 Only expenses with checked boxes are included in DSCR calculation
+              </p>
+            </div>
+
+            {/* Total Cash Flow Expenses */}
+            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+              <div className="flex justify-between items-center">
+                <span className="font-medium text-green-900">Total Cash Flow Expenses:</span>
+                <span className="text-lg font-semibold text-green-900">
+                  {expenseViewMode === 'annual' 
+                    ? formatCurrency(dscrCalculation.annualPITI + dscrCalculation.annualExpenses.total)
+                    : formatCurrency((dscrCalculation.annualPITI + dscrCalculation.annualExpenses.total) / 12)
+                  }
+                </span>
+              </div>
+              <p className="text-xs text-green-700 mt-1">
+                All expenses are included in cash flow calculation (PITI + Operating)
               </p>
             </div>
           </div>

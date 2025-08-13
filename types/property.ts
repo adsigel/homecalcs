@@ -21,6 +21,8 @@ export interface BaseProperty {
   annualInsurance: number
   taxInputType: 'dollar' | 'percentage'
   insuranceInputType: 'dollar' | 'percentage'
+  taxTimeframe: 'annual' | 'monthly'
+  insuranceTimeframe: 'annual' | 'monthly'
   
   // Current market value (for both investment and sale analysis)
   marketValue: number

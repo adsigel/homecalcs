@@ -108,12 +108,12 @@ export function calculatePITIWithHomeSaleProceeds(
   let homeSaleProceedsUsed = 0
   
   if (property.useHomeSaleProceedsAsDownPayment && property.selectedHomeSalePropertyId && propertiesCollection) {
-    const homeSaleProperty = propertiesCollection.properties.find(p => 
-      p.id === property.selectedHomeSalePropertyId && p.activeMode === 'homeSale'
+    const sourceProperty = propertiesCollection.properties.find(p => 
+      p.id === property.selectedHomeSalePropertyId
     )
     
-    if (homeSaleProperty) {
-      const netProceeds = calculateNetProceeds(homeSaleProperty, propertiesCollection)
+    if (sourceProperty) {
+      const netProceeds = calculateNetProceeds(sourceProperty, propertiesCollection)
       if (netProceeds && netProceeds.netProceeds > 0) {
         homeSaleProceedsUsed = Math.min(netProceeds.netProceeds, property.purchasePrice)
         adjustedDownPayment = homeSaleProceedsUsed
@@ -164,9 +164,9 @@ export function validatePropertyData(property: Property, calculatorMode?: 'inves
     if (property.salePrice <= 0) {
       errors.push('Sale price must be greater than 0')
     }
-    if (property.originalPurchasePrice < 0) {
-      errors.push('Original purchase price cannot be negative')
-    }
+          if (property.purchasePrice < 0) {
+        errors.push('Purchase price cannot be negative')
+      }
   }
   
   return {
@@ -307,10 +307,10 @@ export function calculateNetProceeds(
     realtorCommissionInputType,
     closingCosts, 
     capitalGainsTaxRate,
-    originalPurchasePrice,
+    purchasePrice,
     use1031Exchange,
     selectedReplacementPropertyId,
-    qiFees
+    qiFees: propertyQiFees
   } = property
   
   if (salePrice <= 0) return null
@@ -325,7 +325,7 @@ export function calculateNetProceeds(
   
   // Add QI fees if using 1031 exchange
   if (use1031Exchange) {
-    totalExpenses += qiFees
+    totalExpenses += (propertyQiFees || 1500) // Default to $1500 if not set
   }
   
   // Calculate net proceeds before taxes
@@ -337,9 +337,9 @@ export function calculateNetProceeds(
   let bootTax = 0
   
   if (use1031Exchange && selectedReplacementPropertyId && propertiesCollection) {
-    // 1031 Exchange: Find replacement property
+    // 1031 Exchange: Find replacement property (any property type)
     const replacementProperty = propertiesCollection.properties.find(p => 
-      p.id === selectedReplacementPropertyId && p.activeMode === 'investment'
+      p.id === selectedReplacementPropertyId
     )
     
     if (replacementProperty) {
@@ -347,14 +347,20 @@ export function calculateNetProceeds(
       boot = Math.max(0, salePrice - replacementProperty.purchasePrice)
       
       if (boot > 0) {
-        // Only pay capital gains tax on the boot amount
-        const capitalGains = Math.max(0, salePrice - originalPurchasePrice)
+        // Calculate capital gains on the entire gain
+        const capitalGains = Math.max(0, salePrice - purchasePrice)
+        // Pay capital gains tax only on the boot amount (proportional to total gain)
         bootTax = (boot / capitalGains) * (capitalGains * capitalGainsTaxRate / 100)
+        // Set capital gains tax to boot tax for 1031 exchange
+        capitalGainsTax = bootTax
+      } else {
+        // No boot - full tax deferral
+        capitalGainsTax = 0
       }
     }
   } else {
     // Regular sale: Calculate capital gains tax on entire gain
-    const capitalGains = Math.max(0, salePrice - originalPurchasePrice)
+    const capitalGains = Math.max(0, salePrice - purchasePrice)
     capitalGainsTax = capitalGains * capitalGainsTaxRate / 100
   }
   
@@ -369,7 +375,7 @@ export function calculateNetProceeds(
     totalExpenses,
     netProceeds,
     capitalGainsTax,
-    qiFees: use1031Exchange ? qiFees : 0,
+    qiFees: use1031Exchange ? (propertyQiFees || 1500) : 0,
     boot,
     bootTax,
     use1031Exchange

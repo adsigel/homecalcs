@@ -51,6 +51,10 @@ export default function PropertyManager({
   }
 
   const getSupportedModes = (property: Property) => {
+    if (!property.supportedModes || property.supportedModes.length === 0) {
+      // Fallback to activeMode if supportedModes is not available
+      return property.activeMode === 'homeSale' ? 'Sale' : 'Investment'
+    }
     return property.supportedModes.map(mode => 
       mode === 'homeSale' ? 'Sale' : 'Investment'
     ).join(', ')
@@ -99,7 +103,10 @@ export default function PropertyManager({
                         {property.streetAddress || 'No address'}
                       </div>
                       <div className="text-xs text-gray-400">
-                        Active Mode: {getPropertyTypeLabel(property)} | Supported: {getSupportedModes(property)}
+                        Active Mode: {getPropertyTypeLabel(property)}
+                        {property.supportedModes && property.supportedModes.length > 1 && (
+                          <> | Supported: {getSupportedModes(property)}</>
+                        )}
                       </div>
                     </div>
                   </div>

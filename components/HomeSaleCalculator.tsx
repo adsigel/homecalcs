@@ -34,7 +34,7 @@ export default function HomeSaleCalculator({ property, propertiesCollection }: H
             <h3 className="font-semibold text-green-800">Net Proceeds</h3>
           </div>
           <div className="text-2xl font-bold text-green-900">
-            ${calculation.netProceeds.toLocaleString()}
+            ${(calculation.netProceeds || 0).toLocaleString()}
           </div>
           <p className="text-sm text-green-700">Cash after all expenses & taxes</p>
         </div>
@@ -46,7 +46,7 @@ export default function HomeSaleCalculator({ property, propertiesCollection }: H
             <h3 className="font-semibold text-red-800">Capital Gains Tax</h3>
           </div>
           <div className="text-2xl font-bold text-red-900">
-            ${calculation.capitalGainsTax.toLocaleString()}
+            ${(calculation.capitalGainsTax || 0).toLocaleString()}
           </div>
           <p className="text-sm text-red-700">
             {calculation.use1031Exchange ? 'Tax on boot amount' : 'Tax on property appreciation'}
@@ -60,7 +60,7 @@ export default function HomeSaleCalculator({ property, propertiesCollection }: H
             <h3 className="font-semibold text-blue-800">Total Expenses</h3>
           </div>
           <div className="text-2xl font-bold text-blue-900">
-            ${calculation.totalExpenses.toLocaleString()}
+            ${(calculation.totalExpenses || 0).toLocaleString()}
           </div>
           <p className="text-sm text-blue-700">Commission, closing costs & fees</p>
         </div>
@@ -76,18 +76,18 @@ export default function HomeSaleCalculator({ property, propertiesCollection }: H
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-blue-700">QI Fees:</span>
-              <span className="ml-2 font-medium">${calculation.qiFees.toLocaleString()}</span>
+              <span className="ml-2 font-medium">${(calculation.qiFees || 0).toLocaleString()}</span>
             </div>
             {calculation.boot > 0 && (
               <div>
                 <span className="text-blue-700">Boot Amount:</span>
-                <span className="ml-2 font-medium text-orange-600">${calculation.boot.toLocaleString()}</span>
+                <span className="ml-2 font-medium text-orange-600">${(calculation.boot || 0).toLocaleString()}</span>
               </div>
             )}
             <div>
               <span className="text-blue-700">Tax Deferral:</span>
               <span className="ml-2 font-medium text-green-600">
-                ${((property.salePrice - property.originalPurchasePrice) * (property.capitalGainsTaxRate / 100) - calculation.capitalGainsTax).toLocaleString()}
+                ${((property.salePrice - property.purchasePrice) * (property.capitalGainsTaxRate / 100) - (calculation.capitalGainsTax || 0)).toLocaleString()}
               </span>
             </div>
           </div>
@@ -155,17 +155,17 @@ export default function HomeSaleCalculator({ property, propertiesCollection }: H
           <div className="space-y-3">
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Original Purchase Price</span>
-              <span className="font-medium">${(property.originalPurchasePrice || 0).toLocaleString()}</span>
+                              <span className="font-medium">${(property.purchasePrice || 0).toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Capital Gain</span>
-              <span className="font-medium">${((property.salePrice || 0) - (property.originalPurchasePrice || 0)).toLocaleString()}</span>
+                              <span className="font-medium">${((property.salePrice || 0) - (property.purchasePrice || 0)).toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Tax Rate</span>
               <span className="font-medium">{property.capitalGainsTaxRate}%</span>
             </div>
-            {calculation.use1031Exchange && calculation.boot > 0 && (
+            {calculation.use1031Exchange && (calculation.boot || 0) > 0 && (
               <div className="flex justify-between items-center py-2 border-b border-gray-100">
                 <span className="text-gray-600">Boot Tax</span>
                 <span className="font-medium text-orange-600">${(calculation.bootTax || 0).toLocaleString()}</span>

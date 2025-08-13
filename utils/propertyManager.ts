@@ -30,6 +30,8 @@ export function createProperty(
     annualInsurance: 0,
     taxInputType: 'dollar',
     insuranceInputType: 'dollar',
+    taxTimeframe: 'annual',
+    insuranceTimeframe: 'annual',
     
     // Market value
     marketValue: 0,
@@ -198,6 +200,8 @@ function migrateLegacyProperty(legacyProperty: any): Property {
     annualInsurance: legacyProperty.annualInsurance || 0,
     taxInputType: legacyProperty.taxInputType || 'dollar',
     insuranceInputType: legacyProperty.insuranceInputType || 'dollar',
+    taxTimeframe: legacyProperty.taxTimeframe || 'annual',
+    insuranceTimeframe: legacyProperty.insuranceTimeframe || 'annual',
     
     // Market value
     marketValue: legacyProperty.marketValue || 0,

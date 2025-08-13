@@ -128,9 +128,12 @@ export default function GlobalInputsPanel({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Market Value</label>
             <input
-              type="number"
-              value={property.marketValue || ''}
-              onChange={(e) => handleInputChange('marketValue', parseFloat(e.target.value) || 0)}
+              type="text"
+              value={formatNumber(property.marketValue || 0)}
+              onChange={(e) => {
+                const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
+                handleInputChange('marketValue', value)
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
               placeholder="Current market value"
             />
@@ -147,9 +150,12 @@ export default function GlobalInputsPanel({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Price</label>
               <input
-                type="number"
-                value={property.purchasePrice || ''}
-                onChange={(e) => handleInputChange('purchasePrice', parseFloat(e.target.value) || 0)}
+                type="text"
+                value={formatNumber(property.purchasePrice || 0)}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
+                  handleInputChange('purchasePrice', value)
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 placeholder="Purchase price"
               />
@@ -159,21 +165,40 @@ export default function GlobalInputsPanel({
               <label className="block text-sm font-medium text-gray-700 mb-1">Down Payment</label>
               <div className="flex gap-2">
                 <input
-                  type="number"
-                  value={property.downPayment || ''}
-                  onChange={(e) => handleInputChange('downPayment', parseFloat(e.target.value) || 0)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                  type="text"
+                  value={formatNumber(property.downPayment || 0)}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
+                    handleInputChange('downPayment', value)
+                  }}
+                  className={`flex-1 px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                    property.useHomeSaleProceedsAsDownPayment
+                      ? 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed'
+                      : 'border-gray-300'
+                  }`}
                   placeholder="Down payment"
+                  readOnly={property.useHomeSaleProceedsAsDownPayment}
+                  disabled={property.useHomeSaleProceedsAsDownPayment}
                 />
                 <select
                   value={property.downPaymentInputType}
                   onChange={(e) => handleSelectChange('downPaymentInputType', e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 h-10 bg-white"
+                  className={`px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 h-10 ${
+                    property.useHomeSaleProceedsAsDownPayment
+                      ? 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed'
+                      : 'bg-white border-gray-300'
+                  }`}
+                  disabled={property.useHomeSaleProceedsAsDownPayment}
                 >
                   <option value="dollar">$</option>
                   <option value="percentage">%</option>
                 </select>
               </div>
+              {property.useHomeSaleProceedsAsDownPayment && (
+                <p className="text-sm text-gray-600 mt-1">
+                  Down payment will be calculated from selected property's sale proceeds
+                </p>
+              )}
             </div>
             
             <div>
@@ -255,9 +280,12 @@ export default function GlobalInputsPanel({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Sale Price</label>
               <input
-                type="number"
-                value={property.salePrice || ''}
-                onChange={(e) => handleInputChange('salePrice', parseFloat(e.target.value) || 0)}
+                type="text"
+                value={formatNumber(property.salePrice || 0)}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
+                  handleInputChange('salePrice', value)
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 placeholder="Sale price"
               />
@@ -266,9 +294,12 @@ export default function GlobalInputsPanel({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Original Purchase Price</label>
               <input
-                type="number"
-                value={property.originalPurchasePrice || ''}
-                onChange={(e) => handleInputChange('originalPurchasePrice', parseFloat(e.target.value) || 0)}
+                type="text"
+                value={formatNumber(property.originalPurchasePrice || 0)}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
+                  handleInputChange('originalPurchasePrice', value)
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 placeholder="Original purchase price"
               />
@@ -277,9 +308,12 @@ export default function GlobalInputsPanel({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Outstanding Mortgage Balance</label>
               <input
-                type="number"
-                value={property.outstandingMortgageBalance || ''}
-                onChange={(e) => handleInputChange('outstandingMortgageBalance', parseFloat(e.target.value) || 0)}
+                type="text"
+                value={formatNumber(property.outstandingMortgageBalance || 0)}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
+                  handleInputChange('outstandingMortgageBalance', value)
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 placeholder="Outstanding mortgage"
               />
@@ -289,9 +323,12 @@ export default function GlobalInputsPanel({
               <label className="block text-sm font-medium text-gray-700 mb-1">Realtor Commission</label>
               <div className="flex gap-2">
                 <input
-                  type="number"
-                  value={property.realtorCommission || ''}
-                  onChange={(e) => handleInputChange('realtorCommission', parseFloat(e.target.value) || 0)}
+                  type="text"
+                  value={formatNumber(property.realtorCommission || 0)}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
+                    handleInputChange('realtorCommission', value)
+                  }}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                   placeholder="Realtor commission"
                 />
@@ -309,9 +346,12 @@ export default function GlobalInputsPanel({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Closing Costs</label>
               <input
-                type="number"
-                value={property.closingCosts || ''}
-                onChange={(e) => handleInputChange('closingCosts', parseFloat(e.target.value) || 0)}
+                type="text"
+                value={formatNumber(property.closingCosts || 0)}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
+                  handleInputChange('closingCosts', value)
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 placeholder="Closing costs"
               />
@@ -356,10 +396,10 @@ export default function GlobalInputsPanel({
                   >
                     <option value="">-- Select a replacement property --</option>
                     {propertiesCollection.properties
-                      .filter(p => p.activeMode === 'investment' && p.id !== property.id)
+                      .filter(p => p.id !== property.id)
                       .map((prop) => (
                         <option key={prop.id} value={prop.id}>
-                          {prop.name || prop.streetAddress} (${prop.purchasePrice?.toLocaleString() || 0})
+                          {prop.name || prop.streetAddress} - {prop.activeMode === 'investment' ? 'Investment' : 'Home Sale'} (${prop.purchasePrice?.toLocaleString() || 0})
                         </option>
                       ))}
                   </select>
@@ -380,45 +420,93 @@ export default function GlobalInputsPanel({
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Annual Property Taxes</label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                value={property.annualTaxes || ''}
-                onChange={(e) => handleInputChange('annualTaxes', parseFloat(e.target.value) || 0)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                placeholder="Annual property taxes"
-              />
-              <select
-                value={property.taxInputType}
-                onChange={(e) => handleSelectChange('taxInputType', e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 h-10 bg-white"
-              >
-                <option value="dollar">$</option>
-                <option value="percentage">%</option>
-              </select>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-medium text-gray-600">Property Taxes</label>
+              <div className="flex rounded-md shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => handleSelectChange('taxTimeframe', 'annual')}
+                  className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
+                    property.taxTimeframe === 'annual'
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  Annual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectChange('taxTimeframe', 'monthly')}
+                  className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
+                    property.taxTimeframe === 'monthly'
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  Monthly
+                </button>
+              </div>
             </div>
+            <input
+              type="text"
+              value={formatNumber(property.taxTimeframe === 'monthly' ? (property.annualTaxes || 0) / 12 : (property.annualTaxes || 0))}
+              onChange={(e) => {
+                const inputValue = parseFloat(e.target.value.replace(/,/g, '')) || 0
+                // Convert to annual if input is monthly
+                const annualValue = property.taxTimeframe === 'monthly' ? inputValue * 12 : inputValue
+                handleInputChange('annualTaxes', annualValue)
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              placeholder={property.taxTimeframe === 'monthly' ? 'Monthly property taxes' : 'Annual property taxes'}
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              {property.taxTimeframe === 'monthly' ? 'Monthly amount' : 'Annual amount'}
+            </p>
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Annual Insurance</label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                value={property.annualInsurance || ''}
-                onChange={(e) => handleInputChange('annualInsurance', parseFloat(e.target.value) || 0)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                placeholder="Annual insurance"
-              />
-              <select
-                value={property.insuranceInputType}
-                onChange={(e) => handleSelectChange('insuranceInputType', e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 h-10 bg-white"
-              >
-                <option value="dollar">$</option>
-                <option value="percentage">%</option>
-              </select>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-medium text-gray-600">Property Insurance</label>
+              <div className="flex rounded-md shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => handleSelectChange('insuranceTimeframe', 'annual')}
+                  className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
+                    property.insuranceTimeframe === 'annual'
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  Annual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectChange('insuranceTimeframe', 'monthly')}
+                  className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
+                    property.insuranceTimeframe === 'monthly'
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  Monthly
+                </button>
+              </div>
             </div>
+            <input
+              type="text"
+              value={formatNumber(property.insuranceTimeframe === 'monthly' ? (property.annualInsurance || 0) / 12 : (property.annualInsurance || 0))}
+              onChange={(e) => {
+                const inputValue = parseFloat(e.target.value.replace(/,/g, '')) || 0
+                // Convert to annual if input is monthly
+                const annualValue = property.insuranceTimeframe === 'monthly' ? inputValue * 12 : inputValue
+                handleInputChange('annualInsurance', annualValue)
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              placeholder={property.insuranceTimeframe === 'monthly' ? 'Monthly insurance' : 'Annual insurance'}
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              {property.insuranceTimeframe === 'monthly' ? 'Monthly amount' : 'Annual amount'}
+            </p>
           </div>
         </div>
       </div>
@@ -430,27 +518,46 @@ export default function GlobalInputsPanel({
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Gross Rental Income</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={formatNumber(property.grossRentalIncome || 0)}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
-                    handleInputChange('grossRentalIncome', value)
-                  }}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                  placeholder="Gross rental income"
-                />
-                <select
-                  value={property.rentalIncomeInputType}
-                  onChange={(e) => handleSelectChange('rentalIncomeInputType', e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 h-10 bg-white"
-                >
-                  <option value="monthly">Monthly</option>
-                  <option value="annual">Annual</option>
-                </select>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-medium text-gray-600">Gross Rental Income</label>
+                <div className="flex rounded-md shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => handleSelectChange('rentalIncomeInputType', 'annual')}
+                    className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
+                      property.rentalIncomeInputType === 'annual'
+                        ? 'bg-primary-600 text-white border-primary-600'
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    Annual
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectChange('rentalIncomeInputType', 'monthly')}
+                    className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
+                      property.rentalIncomeInputType === 'monthly'
+                        ? 'bg-primary-600 text-white border-primary-600'
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    Monthly
+                  </button>
+                </div>
               </div>
+              <input
+                type="text"
+                value={formatNumber(property.grossRentalIncome || 0)}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value.replace(/,/g, '')) || 0
+                  handleInputChange('grossRentalIncome', value)
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                placeholder="Gross rental income"
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                {property.rentalIncomeInputType === 'monthly' ? 'Monthly amount' : 'Annual amount'}
+              </p>
             </div>
             
             <div>
@@ -475,110 +582,161 @@ export default function GlobalInputsPanel({
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Property Management Fee</label>
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={property.propertyManagementFee || ''}
-                      onChange={(e) => handleInputChange('propertyManagementFee', parseFloat(e.target.value) || 0)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                      placeholder="Property management fee"
-                    />
-                    <select
-                      value={property.propertyManagementInputType}
-                      onChange={(e) => handleSelectChange('propertyManagementInputType', e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 h-10 bg-white"
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-medium text-gray-600">Property Management Fee</label>
+                  <div className="flex rounded-md shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectChange('propertyManagementInputType', 'dollar')}
+                      className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
+                        property.propertyManagementInputType === 'dollar'
+                          ? 'bg-primary-600 text-white border-primary-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      }`}
                     >
-                      <option value="dollar">$</option>
-                      <option value="percentage">%</option>
-                    </select>
+                      $
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectChange('propertyManagementInputType', 'percentage')}
+                      className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
+                        property.propertyManagementInputType === 'percentage'
+                          ? 'bg-primary-600 text-white border-primary-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      %
+                    </button>
                   </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="includePropertyManagement"
-                      checked={property.includePropertyManagement}
-                      onChange={(e) => handleToggle('includePropertyManagement', e.target.checked)}
-                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="includePropertyManagement" className="ml-2 block text-sm text-gray-900">
-                      Include in DSCR
-                    </label>
-                  </div>
+                </div>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={property.propertyManagementFee || ''}
+                  onChange={(e) => handleInputChange('propertyManagementFee', parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                  placeholder="Property management fee"
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  {property.propertyManagementInputType === 'dollar' ? 'Dollar amount' : 'Percentage of rent'}
+                </p>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="includePropertyManagement"
+                    checked={property.includePropertyManagement}
+                    onChange={(e) => handleToggle('includePropertyManagement', e.target.checked)}
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="includePropertyManagement" className="ml-2 block text-sm text-gray-900">
+                    Include in DSCR
+                  </label>
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Maintenance Reserve</label>
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={property.maintenanceReserve || ''}
-                      onChange={(e) => handleInputChange('maintenanceReserve', parseFloat(e.target.value) || 0)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                      placeholder="Maintenance reserve"
-                    />
-                    <select
-                      value={property.maintenanceInputType}
-                      onChange={(e) => handleSelectChange('maintenanceInputType', e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 h-10 bg-white"
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-medium text-gray-600">Maintenance Reserve</label>
+                  <div className="flex rounded-md shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectChange('maintenanceInputType', 'dollar')}
+                      className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
+                        property.maintenanceInputType === 'dollar'
+                          ? 'bg-primary-600 text-white border-primary-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      }`}
                     >
-                      <option value="dollar">$</option>
-                      <option value="percentage">%</option>
-                    </select>
+                      $
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectChange('maintenanceInputType', 'percentage')}
+                      className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
+                        property.maintenanceInputType === 'percentage'
+                          ? 'bg-primary-600 text-white border-primary-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      %
+                    </button>
                   </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="includeMaintenance"
-                      checked={property.includeMaintenance}
-                      onChange={(e) => handleToggle('includeMaintenance', e.target.checked)}
-                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="includeMaintenance" className="ml-2 block text-sm text-gray-900">
-                      Include in DSCR
-                    </label>
-                  </div>
+                </div>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={property.maintenanceReserve || ''}
+                  onChange={(e) => handleInputChange('maintenanceReserve', parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                  placeholder="Maintenance reserve"
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  {property.maintenanceInputType === 'dollar' ? 'Dollar amount' : 'Percentage of rent'}
+                </p>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="includeMaintenance"
+                    checked={property.includeMaintenance}
+                    onChange={(e) => handleToggle('includeMaintenance', e.target.checked)}
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="includeMaintenance" className="ml-2 block text-sm text-gray-900">
+                    Include in DSCR
+                  </label>
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">HOA Fees</label>
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={property.hoaFees || ''}
-                      onChange={(e) => handleInputChange('hoaFees', parseFloat(e.target.value) || 0)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                      placeholder="HOA fees"
-                    />
-                    <select
-                      value={property.hoaInputType}
-                      onChange={(e) => handleSelectChange('hoaInputType', e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 h-10 bg-white"
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-medium text-gray-600">HOA Fees</label>
+                  <div className="flex rounded-md shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectChange('hoaInputType', 'annual')}
+                      className={`px-2 py-1 text-xs font-medium border border-r-0 rounded-l-md transition-colors ${
+                        property.hoaInputType === 'annual'
+                          ? 'bg-primary-600 text-white border-primary-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      }`}
                     >
-                      <option value="monthly">Monthly</option>
-                      <option value="annual">Annual</option>
-                    </select>
+                      Annual
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectChange('hoaInputType', 'monthly')}
+                      className={`px-2 py-1 text-xs font-medium border rounded-r-md transition-colors ${
+                        property.hoaInputType === 'monthly'
+                          ? 'bg-primary-600 text-white border-primary-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      Monthly
+                    </button>
                   </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="includeHoaFees"
-                      checked={property.includeHoaFees}
-                      onChange={(e) => handleToggle('includeHoaFees', e.target.checked)}
-                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="includeHoaFees" className="ml-2 block text-sm text-gray-900">
-                      Include in DSCR
-                    </label>
-                  </div>
+                </div>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={property.hoaFees || ''}
+                  onChange={(e) => handleInputChange('hoaFees', parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                  placeholder="HOA fees"
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  {property.hoaInputType === 'monthly' ? 'Monthly amount' : 'Annual amount'}
+                </p>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="includeHoaFees"
+                    checked={property.includeHoaFees}
+                    onChange={(e) => handleToggle('includeHoaFees', e.target.checked)}
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="includeHoaFees" className="ml-2 block text-sm text-gray-900">
+                    Include in DSCR
+                  </label>
                 </div>
               </div>
             </div>

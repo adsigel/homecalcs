@@ -86,6 +86,7 @@ export default function EnhancedAddressField({
               onChange={(e) => handleAddressChange(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
               placeholder="Enter street address"
+              autoComplete="off"
             />
             
             {/* Dropdown Toggle */}
