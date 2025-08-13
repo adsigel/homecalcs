@@ -8,7 +8,7 @@ export interface BaseProperty {
   // Shared property details
   purchasePrice: number
   originalPurchasePrice: number
-  yearBuilt?: number
+  yearBought?: number
   propertyType: 'single-family' | 'multi-family' | 'condo' | 'townhouse' | 'other'
   
   // Mortgage details (shared between investment and sale analysis)

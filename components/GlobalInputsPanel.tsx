@@ -132,14 +132,16 @@ export default function GlobalInputsPanel({
             </select>
           </div>
           
+
+          
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Year Built</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Year Bought</label>
             <input
               type="number"
-              value={property.yearBuilt || ''}
-              onChange={(e) => handleInputChange('yearBuilt', parseInt(e.target.value) || 0)}
+              value={property.yearBought || ''}
+              onChange={(e) => handleInputChange('yearBought', parseInt(e.target.value) || 0)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-              placeholder="Year built"
+              placeholder="Year purchased"
             />
           </div>
           
@@ -432,9 +434,10 @@ export default function GlobalInputsPanel({
         </div>
       )}
 
-      {/* Shared Inputs */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-900">Taxes & Insurance</h3>
+      {/* Taxes & Insurance - Only for Investment Properties */}
+      {calculatorMode === 'investment' && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-900">Taxes & Insurance</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -552,6 +555,7 @@ export default function GlobalInputsPanel({
           </div>
         </div>
       </div>
+      )}
 
       {/* Investment Property Specific Inputs */}
       {calculatorMode === 'investment' && (

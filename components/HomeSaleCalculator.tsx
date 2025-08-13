@@ -26,43 +26,43 @@ export default function HomeSaleCalculator({ property, propertiesCollection }: H
       </h2>
 
       {/* Results Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 xl:gap-8 mb-6">
         {/* Net Proceeds */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-lg p-4">
+        <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-lg p-4 flex flex-col h-full">
           <div className="flex items-center gap-2 mb-2">
-            <DollarSign className="w-5 h-5 text-green-600" />
-            <h3 className="font-semibold text-green-800">Net Proceeds</h3>
+            <DollarSign className="w-5 h-5 text-green-600 flex-shrink-0" />
+            <h3 className="font-semibold text-green-800 whitespace-nowrap">Net Proceeds</h3>
           </div>
-          <div className="text-2xl font-bold text-green-900">
+          <div className="text-2xl font-bold text-green-900 mb-2">
             ${(calculation.netProceeds || 0).toLocaleString()}
           </div>
-          <p className="text-sm text-green-700">Cash after all expenses & taxes</p>
+          <p className="text-sm text-green-700 mt-auto">Cash after all expenses & taxes</p>
         </div>
 
         {/* Capital Gains Tax */}
-        <div className="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-lg p-4">
+        <div className="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-lg p-4 flex flex-col h-full">
           <div className="flex items-center gap-2 mb-2">
-            <Calculator className="w-5 h-5 text-red-600" />
-            <h3 className="font-semibold text-red-800">Capital Gains Tax</h3>
+            <Calculator className="w-5 h-5 text-red-600 flex-shrink-0" />
+            <h3 className="font-semibold text-red-800 whitespace-nowrap">Capital Gains Tax</h3>
           </div>
-          <div className="text-2xl font-bold text-red-900">
+          <div className="text-2xl font-bold text-red-900 mb-2">
             ${(calculation.capitalGainsTax || 0).toLocaleString()}
           </div>
-          <p className="text-sm text-red-700">
+          <p className="text-sm text-red-700 mt-auto">
             {calculation.use1031Exchange ? 'Tax on boot amount' : 'Tax on property appreciation'}
           </p>
         </div>
 
         {/* Total Expenses */}
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4 flex flex-col h-full">
           <div className="flex items-center gap-2 mb-2">
-            <Receipt className="w-5 h-5 text-blue-600" />
-            <h3 className="font-semibold text-blue-800">Total Expenses</h3>
+            <Receipt className="w-5 h-5 text-blue-600 flex-shrink-0" />
+            <h3 className="font-semibold text-blue-800 whitespace-nowrap">Total Expenses</h3>
           </div>
-          <div className="text-2xl font-bold text-blue-900">
+          <div className="text-2xl font-bold text-blue-900 mb-2">
             ${(calculation.totalExpenses || 0).toLocaleString()}
           </div>
-          <p className="text-sm text-blue-700">Commission, closing costs & fees</p>
+          <p className="text-sm text-blue-700 mt-auto">Commission, closing costs & fees</p>
         </div>
       </div>
 

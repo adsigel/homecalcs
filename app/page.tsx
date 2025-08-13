@@ -30,6 +30,8 @@ export default function Home() {
   const [propertyName, setPropertyName] = useState('')
   const [streetAddress, setStreetAddress] = useState('')
   const [propertyType, setPropertyType] = useState<'investment' | 'homeSale'>('investment')
+  const [marketValue, setMarketValue] = useState('')
+  const [yearBought, setYearBought] = useState('')
   const [propertyToRename, setPropertyToRename] = useState<Property | null>(null)
 
   // Handle properties collection changes
@@ -207,7 +209,13 @@ export default function Home() {
   const createNewProperty = () => {
     if (!propertyName.trim() || !streetAddress.trim()) return
 
-    const newProperty = createProperty(propertyName.trim(), streetAddress.trim(), propertyType)
+    const newProperty = createProperty(
+      propertyName.trim(), 
+      streetAddress.trim(), 
+      propertyType,
+      parseFloat(marketValue.replace(/,/g, '')) || 0,
+      parseInt(yearBought) || undefined
+    )
     const updatedCollection = {
       properties: [...propertiesCollection.properties, newProperty],
       activePropertyId: newProperty.id
@@ -217,6 +225,13 @@ export default function Home() {
     setActiveProperty(newProperty)
     setCalculatorMode(propertyType)
     setShowNewPropertyDialog(false)
+    
+    // Reset form fields
+    setPropertyName('')
+    setStreetAddress('')
+    setMarketValue('')
+    setYearBought('')
+    setPropertyType('investment')
     
     // Track property addition with Amplitude
     trackPropertyAdded(newProperty.id, propertyType, propertyType)
@@ -391,7 +406,7 @@ export default function Home() {
         }}
       />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl xl:max-w-[1400px] 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {!activeProperty ? (
           <EmptyState onShowNewPropertyDialog={handleShowNewPropertyDialog} />
         ) : (
@@ -528,6 +543,26 @@ export default function Home() {
                 />
               </div>
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Market Value</label>
+                <input
+                  type="text"
+                  value={marketValue}
+                  onChange={(e) => setMarketValue(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="Enter market value"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Year Bought</label>
+                <input
+                  type="number"
+                  value={yearBought}
+                  onChange={(e) => setYearBought(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="Enter year purchased"
+                />
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Initial Calculator Mode</label>
                 <select
                   value={propertyType}
@@ -541,7 +576,15 @@ export default function Home() {
             </div>
             <div className="flex justify-end space-x-3 mt-6">
               <button
-                onClick={() => setShowNewPropertyDialog(false)}
+                onClick={() => {
+                  setShowNewPropertyDialog(false)
+                  // Reset form fields
+                  setPropertyName('')
+                  setStreetAddress('')
+                  setMarketValue('')
+                  setYearBought('')
+                  setPropertyType('investment')
+                }}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800"
               >
                 Cancel

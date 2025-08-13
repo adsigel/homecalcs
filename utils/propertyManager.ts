@@ -4,7 +4,9 @@ import { Property, PropertiesCollection } from '@/types/property'
 export function createProperty(
   name: string, 
   streetAddress: string, 
-  initialMode: 'investment' | 'homeSale' = 'investment'
+  initialMode: 'investment' | 'homeSale' = 'investment',
+  marketValue?: number,
+  yearBought?: number
 ): Property {
   const now = new Date().toISOString()
   
@@ -17,7 +19,7 @@ export function createProperty(
     // Shared property details
     purchasePrice: 0,
     originalPurchasePrice: 0,
-    yearBuilt: undefined,
+    yearBought: yearBought || undefined,
     propertyType: 'single-family',
     
     // Mortgage details
@@ -34,7 +36,7 @@ export function createProperty(
     insuranceTimeframe: 'annual',
     
     // Market value
-    marketValue: 0,
+    marketValue: marketValue || 0,
     
     // Calculator modes
     supportedModes: [initialMode],
@@ -60,10 +62,10 @@ export function createProperty(
     
     // Home sale data
     salePrice: 0,
-    realtorCommission: 0,
-    realtorCommissionInputType: 'dollar',
-    closingCosts: 0,
-    capitalGainsTaxRate: 0.15,
+    realtorCommission: 5,
+    realtorCommissionInputType: 'percentage',
+    closingCosts: 10000,
+    capitalGainsTaxRate: 15,
     use1031Exchange: false,
     selectedReplacementPropertyId: null,
     qiFees: 1500, // Default QI fee
@@ -187,7 +189,7 @@ function migrateLegacyProperty(legacyProperty: any): Property {
     // Shared property details
     purchasePrice: legacyProperty.purchasePrice || 0,
     originalPurchasePrice: legacyProperty.originalPurchasePrice || 0,
-    yearBuilt: legacyProperty.yearBuilt,
+    yearBought: legacyProperty.yearBuilt || legacyProperty.yearBought,
     propertyType: legacyProperty.propertyType || 'single-family',
     
     // Mortgage details
@@ -230,10 +232,10 @@ function migrateLegacyProperty(legacyProperty: any): Property {
     
     // Home sale data
     salePrice: legacyProperty.salePrice || 0,
-    realtorCommission: legacyProperty.realtorCommission || 0,
-    realtorCommissionInputType: legacyProperty.realtorCommissionInputType || 'dollar',
-    closingCosts: legacyProperty.closingCosts || 0,
-    capitalGainsTaxRate: legacyProperty.capitalGainsTaxRate || 0.15,
+    realtorCommission: legacyProperty.realtorCommission || 5,
+    realtorCommissionInputType: legacyProperty.realtorCommissionInputType || 'percentage',
+    closingCosts: legacyProperty.closingCosts || 10000,
+    capitalGainsTaxRate: legacyProperty.capitalGainsTaxRate || 15,
     use1031Exchange: legacyProperty.use1031Exchange || false,
     selectedReplacementPropertyId: legacyProperty.selectedReplacementPropertyId || null,
     qiFees: legacyProperty.qiFees || 1500,
