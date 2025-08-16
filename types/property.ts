@@ -78,8 +78,18 @@ export interface HomeSaleData {
   qiFees: number // Qualified Intermediary fees
 }
 
+// 5-Year Analysis specific data
+export interface FiveYearAnalysisData {
+  // Property-specific assumptions (null means use global)
+  customAssumptions: {
+    homePriceAppreciation: number | null
+    annualRentGrowth: number | null
+    annualInflationRate: number | null
+  } | null
+}
+
 // Main property interface combining all data
-export interface Property extends BaseProperty, InvestmentData, HomeSaleData {}
+export interface Property extends BaseProperty, InvestmentData, HomeSaleData, FiveYearAnalysisData {}
 
 // Properties collection
 export interface PropertiesCollection {

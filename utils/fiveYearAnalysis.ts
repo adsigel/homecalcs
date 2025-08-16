@@ -113,8 +113,14 @@ function calculateIRR(cashFlows: number[], initialInvestment: number, maxIterati
 // Generate 5-year projections for a single property
 export function generatePropertyProjections(
   property: any, // Using any for now to avoid type conflicts
-  assumptions: FiveYearAssumptions
+  globalAssumptions: FiveYearAssumptions
 ): PropertyAnalysis {
+  // Use property-specific assumptions if available, otherwise use global
+  const effectiveAssumptions: FiveYearAssumptions = {
+    homePriceAppreciation: property.customAssumptions?.homePriceAppreciation ?? globalAssumptions.homePriceAppreciation,
+    annualRentGrowth: property.customAssumptions?.annualRentGrowth ?? globalAssumptions.annualRentGrowth,
+    annualInflationRate: property.customAssumptions?.annualInflationRate ?? globalAssumptions.annualInflationRate
+  }
   const missingFields: string[] = []
   
   // Check for required data
@@ -150,9 +156,10 @@ export function generatePropertyProjections(
     }
   }
   
-  const loanAmount = property.purchasePrice - property.downPayment
+  // For existing properties, use outstanding mortgage balance; for new purchases, calculate from down payment
+  const currentMortgageBalance = property.outstandingMortgageBalance || (property.purchasePrice - property.downPayment)
   const monthlyMortgagePayment = calculateMonthlyMortgagePayment(
-    loanAmount,
+    currentMortgageBalance,
     property.interestRate,
     property.loanTerm
   )
@@ -165,11 +172,11 @@ export function generatePropertyProjections(
   
   for (let year = 0; year <= 5; year++) {
     // Home value growth
-    const homeValue = startingValue * Math.pow(1 + assumptions.homePriceAppreciation / 100, year)
+    const homeValue = startingValue * Math.pow(1 + effectiveAssumptions.homePriceAppreciation / 100, year)
     
     // Mortgage balance
     const mortgageBalance = calculateRemainingBalance(
-      loanAmount,
+      currentMortgageBalance,
       property.interestRate,
       property.loanTerm,
       year
@@ -180,10 +187,10 @@ export function generatePropertyProjections(
     const homeEquityPercentage = (homeEquity / homeValue) * 100
     
     // Rent growth
-    const monthlyRent = property.grossRentalIncome * Math.pow(1 + assumptions.annualRentGrowth / 100, year)
+    const monthlyRent = property.grossRentalIncome * Math.pow(1 + effectiveAssumptions.annualRentGrowth / 100, year)
     
     // Expenses with inflation
-    const monthlyExpenses = calculateMonthlyExpenses(property, assumptions.annualInflationRate, year)
+    const monthlyExpenses = calculateMonthlyExpenses(property, effectiveAssumptions.annualInflationRate, year)
     
     // Cash flow
     const monthlyCashFlow = monthlyRent - monthlyExpenses - monthlyMortgagePayment
@@ -286,16 +293,16 @@ function calculateMonthlyExpenses(property: any, inflationRate: number, year: nu
 // Generate analysis for "keep vs. switch" decision
 export function generateKeepVsSwitchAnalysis(
   properties: any[],
-  assumptions: FiveYearAssumptions
+  globalAssumptions: FiveYearAssumptions
 ): PortfolioAnalysis {
   // For now, assume the first property is what they own
   // Later we'll add explicit ownership flags
   const ownedProperty = properties[0]
-  const alternativeProperties = properties.slice(1, 3) // Max 2 alternatives
+  const alternativeProperties = properties.slice(1, 10) // Max 9 alternatives (10 total properties)
   
-  const ownedAnalysis = ownedProperty ? generatePropertyProjections(ownedProperty, assumptions) : null
+  const ownedAnalysis = ownedProperty ? generatePropertyProjections(ownedProperty, globalAssumptions) : null
   const alternativeAnalyses = alternativeProperties.map(property => 
-    generatePropertyProjections(property, assumptions)
+    generatePropertyProjections(property, globalAssumptions)
   )
   
   const allAnalyses = [ownedAnalysis, ...alternativeAnalyses].filter(Boolean)
@@ -309,7 +316,7 @@ export function generateKeepVsSwitchAnalysis(
     , null as PropertyAnalysis | null)
   
   return {
-    assumptions,
+    assumptions: globalAssumptions,
     properties: allAnalyses.filter(Boolean),
     totalPortfolioValue: ownedAnalysis?.projections[0]?.homeValue || 0,
     totalEquityGrowth: ownedAnalysis?.totalEquityGrowth || 0,

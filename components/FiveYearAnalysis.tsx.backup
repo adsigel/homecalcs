@@ -47,7 +47,6 @@ export default function FiveYearAnalysis({ propertiesCollection }: FiveYearAnaly
   const [hiddenProperties, setHiddenProperties] = useState<Set<string>>(new Set())
   const [editingProperties, setEditingProperties] = useState<Set<string>>(new Set())
   const [customAssumptions, setCustomAssumptions] = useState<Record<string, FiveYearAssumptions>>({})
-  const [chartType, setChartType] = useState<'cashFlow' | 'equityGrowth'>('cashFlow')
 
   useEffect(() => {
     if (propertiesCollection.properties.length > 0) {
@@ -63,39 +62,7 @@ export default function FiveYearAnalysis({ propertiesCollection }: FiveYearAnaly
   }, [propertiesCollection.properties, assumptions, customAssumptions])
 
   const handleAssumptionChange = (field: keyof FiveYearAssumptions, value: number) => {
-    // Validation for realistic limits
-    let validatedValue = value
-    
-    if (field === 'homePriceAppreciation') {
-      if (value > 15) {
-        alert('Home price appreciation above 15% per year is unrealistic. Please use a more conservative estimate.')
-        return
-      }
-      if (value < 0) {
-        alert('Home price appreciation cannot be negative.')
-        return
-      }
-    } else if (field === 'annualRentGrowth') {
-      if (value > 10) {
-        alert('Rent growth above 10% per year is unrealistic. Please use a more conservative estimate.')
-        return
-      }
-      if (value < 0) {
-        alert('Rent growth cannot be negative.')
-        return
-      }
-    } else if (field === 'annualInflationRate') {
-      if (value > 8) {
-        alert('Inflation rate above 8% per year is unrealistic. Please use a more conservative estimate.')
-        return
-      }
-      if (value < 0) {
-        alert('Inflation rate cannot be negative.')
-        return
-      }
-    }
-    
-    const newAssumptions = { ...assumptions, [field]: validatedValue }
+    const newAssumptions = { ...assumptions, [field]: value }
     setAssumptions(newAssumptions)
     
     if (propertiesCollection.properties.length > 0) {
@@ -129,41 +96,9 @@ export default function FiveYearAnalysis({ propertiesCollection }: FiveYearAnaly
   }
 
   const handlePropertyAssumptionChange = (propertyId: string, field: keyof FiveYearAssumptions, value: number) => {
-    // Validation for realistic limits
-    let validatedValue = value
-    
-    if (field === 'homePriceAppreciation') {
-      if (value > 15) {
-        alert('Home price appreciation above 15% per year is unrealistic. Please use a more conservative estimate.')
-        return
-      }
-      if (value < 0) {
-        alert('Home price appreciation cannot be negative.')
-        return
-      }
-    } else if (field === 'annualRentGrowth') {
-      if (value > 10) {
-        alert('Rent growth above 10% per year is unrealistic. Please use a more conservative estimate.')
-        return
-      }
-      if (value < 0) {
-        alert('Rent growth cannot be negative.')
-        return
-      }
-    } else if (field === 'annualInflationRate') {
-      if (value > 8) {
-        alert('Inflation rate above 8% per year is unrealistic. Please use a more conservative estimate.')
-        return
-      }
-      if (value < 0) {
-        alert('Inflation rate cannot be negative.')
-        return
-      }
-    }
-    
     setCustomAssumptions(prev => {
       const current = prev[propertyId] || { ...assumptions }
-      const updated = { ...current, [field]: validatedValue }
+      const updated = { ...current, [field]: value }
       return { ...prev, [propertyId]: updated }
     })
   }
@@ -239,8 +174,6 @@ export default function FiveYearAnalysis({ propertiesCollection }: FiveYearAnaly
             <input
               type="number"
               step="0.1"
-              min="0"
-              max="15"
               value={assumptions.homePriceAppreciation}
               onChange={(e) => handleAssumptionChange('homePriceAppreciation', parseFloat(e.target.value) || 0)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -253,8 +186,6 @@ export default function FiveYearAnalysis({ propertiesCollection }: FiveYearAnaly
             <input
               type="number"
               step="0.1"
-              min="0"
-              max="10"
               value={assumptions.annualRentGrowth}
               onChange={(e) => handleAssumptionChange('annualRentGrowth', parseFloat(e.target.value) || 0)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -267,8 +198,6 @@ export default function FiveYearAnalysis({ propertiesCollection }: FiveYearAnaly
             <input
               type="number"
               step="0.1"
-              min="0"
-              max="8"
               value={assumptions.annualInflationRate}
               onChange={(e) => handleAssumptionChange('annualInflationRate', parseFloat(e.target.value) || 0)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -315,11 +244,11 @@ export default function FiveYearAnalysis({ propertiesCollection }: FiveYearAnaly
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Show/Edit
+                  Show/Hide
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Property
@@ -336,6 +265,9 @@ export default function FiveYearAnalysis({ propertiesCollection }: FiveYearAnaly
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Cash Flow
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Assumptions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200" key={hiddenProperties.size}>
@@ -346,44 +278,26 @@ export default function FiveYearAnalysis({ propertiesCollection }: FiveYearAnaly
                   return (
                     <tr key={property.propertyId} className={isCurrentProperty ? 'bg-blue-50' : ''}>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-1">
-                          {/* Show/Hide Button */}
-                          <button
-                            onClick={() => togglePropertyVisibility(property.propertyId)}
-                            className={`w-8 h-8 rounded-md transition-colors flex items-center justify-center ${
-                              hiddenProperties.has(property.propertyId)
-                                ? 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                                : 'bg-green-100 text-green-600 hover:bg-green-200'
-                            }`}
-                            title={hiddenProperties.has(property.propertyId) ? 'Show property' : 'Hide property'}
-                          >
-                            {hiddenProperties.has(property.propertyId) ? (
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                              </svg>
-                            ) : (
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                            )}
-                          </button>
-                          
-                          {/* Edit Assumptions Button */}
-                          <button
-                            onClick={() => togglePropertyEditing(property.propertyId)}
-                            className={`w-8 h-8 rounded-md transition-colors flex items-center justify-center ${
-                              editingProperties.has(property.propertyId)
-                                ? 'bg-blue-100 text-blue-600 hover:bg-blue-200'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            }`}
-                            title="Edit property assumptions"
-                          >
+                        <button
+                          onClick={() => togglePropertyVisibility(property.propertyId)}
+                          className={`p-2 rounded-md transition-colors ${
+                            hiddenProperties.has(property.propertyId)
+                              ? 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                              : 'bg-green-100 text-green-600 hover:bg-green-200'
+                          }`}
+                          title={hiddenProperties.has(property.propertyId) ? 'Show property' : 'Hide property'}
+                        >
+                          {hiddenProperties.has(property.propertyId) ? (
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
                             </svg>
-                          </button>
-                        </div>
+                          ) : (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          )}
+                        </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
@@ -435,13 +349,201 @@ export default function FiveYearAnalysis({ propertiesCollection }: FiveYearAnaly
                           : 'N/A'
                         }
                       </td>
-
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => togglePropertyEditing(property.propertyId)}
+                          className={`p-2 rounded-md transition-colors ${
+                            editingProperties.has(property.propertyId)
+                              ? 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                          title="Edit property assumptions"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                      </td>
                     </tr>
+                    
+
+                      <tr>
+                        <td colSpan={7} className="px-6 py-4 bg-gray-50">
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-sm font-medium text-gray-900">Property-Specific Assumptions</h4>
+                              <button
+                                onClick={() => savePropertyAssumptions(property.propertyId)}
+                                className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                              >
+                                Done
+                              </button>
+                            </div>
+                            
+                            <div className="flex items-center gap-3 mb-4">
+                              <input
+                                type="checkbox"
+                                id={`global-${property.propertyId}`}
+                                checked={!customAssumptions[property.propertyId]}
+                                onChange={(e) => toggleGlobalAssumptions(property.propertyId, e.target.checked)}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <label htmlFor={`global-${property.propertyId}`} className="text-sm text-gray-700">
+                                Apply global assumptions
+                              </label>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  Home Price Appreciation (%)
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  min="0"
+                                  max="50"
+                                  value={customAssumptions[property.propertyId]?.homePriceAppreciation ?? assumptions.homePriceAppreciation}
+                                  onChange={(e) => handlePropertyAssumptionChange(property.propertyId, 'homePriceAppreciation', parseFloat(e.target.value) || 0)}
+                                  disabled={!customAssumptions[property.propertyId]}
+                                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                                    !customAssumptions[property.propertyId] ? 'bg-gray-100 text-gray-500' : ''
+                                  }`}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  Annual Rent Growth (%)
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  min="0"
+                                  max="50"
+                                  value={customAssumptions[property.propertyId]?.annualRentGrowth ?? assumptions.annualRentGrowth}
+                                  onChange={(e) => handlePropertyAssumptionChange(property.propertyId, 'annualRentGrowth', parseFloat(e.target.value) || 0)}
+                                  disabled={!customAssumptions[property.propertyId]}
+                                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                                    !customAssumptions[property.propertyId] ? 'bg-gray-100 text-gray-500' : ''
+                                  }`}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  Annual Inflation Rate (%)
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  min="0"
+                                  max="50"
+                                  value={customAssumptions[property.propertyId]?.annualInflationRate ?? assumptions.annualInflationRate}
+                                  onChange={(e) => handlePropertyAssumptionChange(property.propertyId, 'annualInflationRate', parseFloat(e.target.value) || 0)}
+                                  disabled={!customAssumptions[property.propertyId]}
+                                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-ring-primary-500 ${
+                                    !customAssumptions[property.propertyId] ? 'bg-gray-100 text-gray-500' : ''
+                                  }`}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
                   )
                 })}
             </tbody>
           </table>
         </div>
+        
+        {/* Expandable Assumptions Sections */}
+        {visibleProperties
+          .filter((property): property is PropertyAnalysis => property !== null)
+          .map((property) => {
+            if (!editingProperties.has(property.propertyId)) return null
+            
+            return (
+              <div key={`assumptions-${property.propertyId}`} className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-medium text-gray-900">Property-Specific Assumptions: {property.propertyName}</h4>
+                    <button
+                      onClick={() => savePropertyAssumptions(property.propertyId)}
+                      className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      Done
+                    </button>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 mb-4">
+                    <input
+                      type="checkbox"
+                      id={`global-${property.propertyId}`}
+                      checked={!customAssumptions[property.propertyId]}
+                      onChange={(e) => toggleGlobalAssumptions(property.propertyId, e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor={`global-${property.propertyId}`} className="text-sm text-gray-700">
+                      Apply global assumptions
+                    </label>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Home Price Appreciation (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="50"
+                        value={customAssumptions[property.propertyId]?.homePriceAppreciation ?? assumptions.homePriceAppreciation}
+                        onChange={(e) => handlePropertyAssumptionChange(property.propertyId, 'homePriceAppreciation', parseFloat(e.target.value) || 0)}
+                        disabled={!customAssumptions[property.propertyId]}
+                        className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                          !customAssumptions[property.propertyId] ? 'bg-gray-100 text-gray-500' : ''
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Annual Rent Growth (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="50"
+                        value={customAssumptions[property.propertyId]?.annualRentGrowth ?? assumptions.annualRentGrowth}
+                        onChange={(e) => handlePropertyAssumptionChange(property.propertyId, 'annualRentGrowth', parseFloat(e.target.value) || 0)}
+                        disabled={!customAssumptions[property.propertyId]}
+                        className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                          !customAssumptions[property.propertyId] ? 'bg-gray-100 text-gray-500' : ''
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Annual Inflation Rate (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="50"
+                        value={customAssumptions[property.propertyId]?.annualInflationRate ?? assumptions.annualInflationRate}
+                        onChange={(e) => handlePropertyAssumptionChange(property.propertyId, 'annualInflationRate', parseFloat(e.target.value) || 0)}
+                        disabled={!customAssumptions[property.propertyId]}
+                        className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                          !customAssumptions[property.propertyId] ? 'bg-gray-100 text-gray-500' : ''
+                        }`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         
         {/* Property Picker */}
         {hiddenProperties.size > 0 && (
@@ -485,138 +587,15 @@ export default function FiveYearAnalysis({ propertiesCollection }: FiveYearAnaly
         )}
       </div>
 
-      {/* Expandable Assumptions Sections */}
-      {visibleProperties
-        .filter((property): property is PropertyAnalysis => property !== null)
-        .map((property) => {
-          if (!editingProperties.has(property.propertyId)) return null
-          
-          return (
-            <div key={`assumptions-${property.propertyId}`} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <div className="px-6 py-4 bg-gray-50">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-medium text-gray-900">Property-Specific Assumptions: {property.propertyName}</h4>
-                    <button
-                      onClick={() => savePropertyAssumptions(property.propertyId)}
-                      className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                      Done
-                    </button>
-                  </div>
-                  
-                  <div className="flex items-center gap-3 mb-4">
-                    <input
-                      type="checkbox"
-                      id={`global-${property.propertyId}`}
-                      checked={!customAssumptions[property.propertyId]}
-                      onChange={(e) => toggleGlobalAssumptions(property.propertyId, e.target.checked)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <label htmlFor={`global-${property.propertyId}`} className="text-sm text-gray-700">
-                      Apply global assumptions
-                    </label>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Home Price Appreciation (%)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        max="15"
-                        value={customAssumptions[property.propertyId]?.homePriceAppreciation ?? assumptions.homePriceAppreciation}
-                        onChange={(e) => handlePropertyAssumptionChange(property.propertyId, 'homePriceAppreciation', parseFloat(e.target.value) || 0)}
-                        disabled={!customAssumptions[property.propertyId]}
-                        className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          !customAssumptions[property.propertyId] ? 'bg-gray-100 text-gray-500' : ''
-                        }`}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Annual Rent Growth (%)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        max="10"
-                        value={customAssumptions[property.propertyId]?.annualRentGrowth ?? assumptions.annualRentGrowth}
-                        onChange={(e) => handlePropertyAssumptionChange(property.propertyId, 'annualRentGrowth', parseFloat(e.target.value) || 0)}
-                        disabled={!customAssumptions[property.propertyId]}
-                        className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          !customAssumptions[property.propertyId] ? 'bg-gray-100 text-gray-500' : ''
-                        }`}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Annual Inflation Rate (%)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        max="8"
-                        value={customAssumptions[property.propertyId]?.annualInflationRate ?? assumptions.annualInflationRate}
-                        onChange={(e) => handlePropertyAssumptionChange(property.propertyId, 'annualInflationRate', parseFloat(e.target.value) || 0)}
-                        disabled={!customAssumptions[property.propertyId]}
-                        className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          !customAssumptions[property.propertyId] ? 'bg-gray-100 text-gray-500' : ''
-                        }`}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )
-        })}
-
       {/* Cash Flow Chart */}
       {visiblePropertiesWithData.length > 0 && (
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
-              {chartType === 'cashFlow' ? '5-Year Cash Flow Projections' : '5-Year Home Equity Growth'}
-            </h3>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Chart Type:</span>
-              <div className="flex bg-gray-100 rounded-lg p-1">
-                <button
-                  onClick={() => setChartType('cashFlow')}
-                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                    chartType === 'cashFlow'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Cash Flow
-                </button>
-                <button
-                  onClick={() => setChartType('equityGrowth')}
-                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                    chartType === 'equityGrowth'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Equity Growth
-                </button>
-              </div>
-            </div>
-          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">5-Year Cash Flow Projections</h3>
           
           <div className="w-full h-80">
             <Line
               data={{
-                labels: chartType === 'cashFlow' 
-                  ? ['Year 0', 'Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5']
-                  : ['Year 0', 'Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5'],
+                labels: ['Year 0', 'Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5'],
                 datasets: visiblePropertiesWithData
                   .filter((property): property is PropertyAnalysis => property !== null)
                   .map((property, index) => {
@@ -626,12 +605,7 @@ export default function FiveYearAnalysis({ propertiesCollection }: FiveYearAnaly
                       label: property.propertyName,
                       data: [0, 1, 2, 3, 4, 5].map(year => {
                         const projection = property.projections[year]
-                        if (chartType === 'cashFlow') {
-                          return projection ? projection.cumulativeCashFlow : 0
-                        } else {
-                          // For equity growth, show actual equity values over time
-                          return projection ? projection.homeEquity : 0
-                        }
+                        return projection ? projection.cumulativeCashFlow : 0
                       }),
                       borderColor: color,
                       backgroundColor: color,
@@ -697,13 +671,9 @@ export default function FiveYearAnalysis({ propertiesCollection }: FiveYearAnaly
                       font: {
                         size: 12
                       },
-                                        callback: function(value) {
-                    if (chartType === 'cashFlow') {
-                      return `$${(value as number / 1000).toFixed(0)}k`
-                    } else {
-                      return `$${(value as number / 1000).toFixed(0)}k`
-                    }
-                  }
+                      callback: function(value) {
+                        return `$${(value as number / 1000).toFixed(0)}k`
+                      }
                     }
                   }
                 },
@@ -719,51 +689,6 @@ export default function FiveYearAnalysis({ propertiesCollection }: FiveYearAnaly
                 }
               }}
             />
-          </div>
-          
-          {/* Chart Explanation */}
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <h4 className="text-sm font-medium text-gray-900 mb-2">Chart Assumptions & Methodology</h4>
-            <div className="text-xs text-gray-600 space-y-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="font-medium text-gray-700 mb-1">Current Equity Calculation:</p>
-                  <p>Market Value - Outstanding Mortgage Balance (or Purchase Price - Down Payment if no mortgage data)</p>
-                  
-                  <p className="font-medium text-gray-700 mb-1 mt-3">Mortgage Assumptions:</p>
-                  <ul className="list-disc list-inside space-y-1 ml-2">
-                    <li>Fixed interest rate for entire 5-year period</li>
-                    <li>Monthly payments made on time</li>
-                    <li>Standard amortization schedule</li>
-                    <li>No early payoffs or refinancing</li>
-                  </ul>
-                </div>
-                
-                <div>
-                  <p className="font-medium text-gray-700 mb-1">Growth Assumptions:</p>
-                  <ul className="list-disc list-inside space-y-1 ml-2">
-                    <li>Home value appreciation: {chartType === 'cashFlow' ? 'applied annually' : 'compounds each year'}</li>
-                    <li>Rent growth: {chartType === 'cashFlow' ? 'applied annually to rental income' : 'not shown on equity chart'}</li>
-                    <li>Inflation: {chartType === 'cashFlow' ? 'applied to property taxes, insurance, and other expenses' : 'not shown on equity chart'}</li>
-                  </ul>
-                  
-                  <p className="font-medium text-gray-700 mb-1 mt-3">Data Limitations:</p>
-                  <ul className="list-disc list-inside space-y-1 ml-2">
-                    <li>Market conditions may change</li>
-                    <li>Property maintenance costs not included</li>
-                    <li>Tax implications not considered</li>
-                  </ul>
-                </div>
-              </div>
-              
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <p className="text-xs text-gray-500">
-                  💡 <strong>Note:</strong> This analysis provides estimates based on current assumptions. 
-                  Actual results may vary due to market conditions, property performance, and other factors. 
-                  Consider consulting with financial professionals for personalized advice.
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       )}
@@ -814,6 +739,10 @@ export default function FiveYearAnalysis({ propertiesCollection }: FiveYearAnaly
           </div>
         ) : null
       })()}
+
+
+
+
     </div>
   )
 }

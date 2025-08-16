@@ -7,6 +7,7 @@ import { savePropertiesCollection, loadPropertiesCollection } from '@/utils/clou
 import { onAuthStateChange } from '@/utils/firebase'
 import { loadProperties } from '@/utils/propertyManager'
 import { trackCalculatorModeToggle, trackPropertyAdded, trackPropertyToggle, trackSaveButtonClicked, trackPropertyRenamed, trackFirstPropertyCreated } from '@/utils/amplitude'
+import { formatNumber } from '@/utils/calculations'
 import Header from '@/components/Header'
 import GlobalInputsPanel from '@/components/GlobalInputsPanel'
 import PITICalculator from '@/components/PITICalculator'
@@ -33,6 +34,32 @@ export default function Home() {
   const [marketValue, setMarketValue] = useState('')
   const [yearBought, setYearBought] = useState('')
   const [propertyToRename, setPropertyToRename] = useState<Property | null>(null)
+  
+  // First property modal fields
+  const [purchasePrice, setPurchasePrice] = useState('')
+  const [downPayment, setDownPayment] = useState('')
+  const [interestRate, setInterestRate] = useState('')
+  
+  // Format handlers for first property modal
+  const handlePurchasePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^\d]/g, '')
+    if (value === '') {
+      setPurchasePrice('')
+    } else {
+      const numValue = parseInt(value)
+      setPurchasePrice(formatNumber(numValue))
+    }
+  }
+  
+  const handleDownPaymentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^\d]/g, '')
+    if (value === '') {
+      setDownPayment('')
+    } else {
+      const numValue = parseInt(value)
+      setDownPayment(formatNumber(numValue))
+    }
+  }
 
   // Handle properties collection changes
   const handlePropertiesCollectionChange = useCallback((updatedCollection: PropertiesCollection) => {
@@ -210,10 +237,20 @@ export default function Home() {
     const newProperty = createProperty(
       streetAddress.trim(), 
       streetAddress.trim(), 
-      propertyType,
+      'investment', // Always start with investment mode for first property
       parseFloat(marketValue.replace(/,/g, '')) || 0,
       parseInt(yearBought) || undefined
     )
+    
+    // If this is the first property, set additional mortgage data
+    if (propertiesCollection.properties.length === 0) {
+      newProperty.purchasePrice = parseFloat(purchasePrice.replace(/,/g, '')) || 0
+      newProperty.downPayment = parseFloat(downPayment.replace(/,/g, '')) || 0
+      newProperty.interestRate = parseFloat(interestRate) || 0
+      newProperty.loanTerm = 30 // Default to 30 years
+      newProperty.marketValue = parseFloat(purchasePrice.replace(/,/g, '')) || 0 // Use purchase price as initial market value
+    }
+    
     const updatedCollection = {
       properties: [...propertiesCollection.properties, newProperty],
       activePropertyId: newProperty.id
@@ -221,7 +258,7 @@ export default function Home() {
     
     setPropertiesCollection(updatedCollection)
     setActiveProperty(newProperty)
-    setCalculatorMode(propertyType)
+    setCalculatorMode('investment') // Always start with investment calculator
     setShowNewPropertyDialog(false)
     
     // Reset form fields
@@ -229,13 +266,16 @@ export default function Home() {
     setMarketValue('')
     setYearBought('')
     setPropertyType('investment')
+    setPurchasePrice('')
+    setDownPayment('')
+    setInterestRate('')
     
     // Track property addition with Amplitude
-    trackPropertyAdded(newProperty.id, propertyType, propertyType)
+    trackPropertyAdded(newProperty.id, 'investment', 'investment')
     
     // Track if this is the first property
     if (propertiesCollection.properties.length === 0) {
-      trackFirstPropertyCreated(newProperty.id, propertyType)
+      trackFirstPropertyCreated(newProperty.id, 'investment')
     }
     
     savePropertiesCollection(updatedCollection).catch(error => {
@@ -529,51 +569,117 @@ export default function Home() {
       {showNewPropertyDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold mb-4">Create New Property</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
-                <input
-                  type="text"
-                  value={streetAddress}
-                  onChange={(e) => setStreetAddress(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Enter street address"
-                  autoComplete="off"
-                />
+            <h3 className="text-lg font-semibold mb-4">
+              {propertiesCollection.properties.length === 0 ? 'Add Your First Property' : 'Create New Property'}
+            </h3>
+            
+            {propertiesCollection.properties.length === 0 ? (
+              // First property modal - focused on mortgage basics
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Street Address *</label>
+                  <input
+                    type="text"
+                    value={streetAddress}
+                    onChange={(e) => setStreetAddress(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Enter street address"
+                    autoComplete="off"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Price *</label>
+                  <input
+                    type="text"
+                    value={purchasePrice}
+                    onChange={handlePurchasePriceChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Enter purchase price"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Down Payment (Optional)</label>
+                  <input
+                    type="text"
+                    value={downPayment}
+                    onChange={handleDownPaymentChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Enter down payment amount"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Interest Rate (%) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={interestRate}
+                    onChange={(e) => setInterestRate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Enter interest rate"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Year Bought (Optional)</label>
+                  <input
+                    type="number"
+                    value={yearBought}
+                    onChange={(e) => setYearBought(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Enter year purchased"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  * Required fields. We'll start you in the Investment Calculator to see your PITI payments.
+                </p>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Market Value</label>
-                <input
-                  type="text"
-                  value={marketValue}
-                  onChange={(e) => setMarketValue(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Enter market value"
-                />
+            ) : (
+              // Regular property modal for subsequent properties
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
+                  <input
+                    type="text"
+                    value={streetAddress}
+                    onChange={(e) => setStreetAddress(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Enter street address"
+                    autoComplete="off"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Market Value</label>
+                  <input
+                    type="text"
+                    value={marketValue}
+                    onChange={(e) => setMarketValue(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Enter market value"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Year Bought</label>
+                  <input
+                    type="number"
+                    value={yearBought}
+                    onChange={(e) => setYearBought(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Enter year purchased"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Initial Calculator Mode</label>
+                  <select
+                    value={propertyType}
+                    onChange={(e) => setPropertyType(e.target.value as 'investment' | 'homeSale')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="investment">Investment Property</option>
+                    <option value="homeSale">Home Sale</option>
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Year Bought</label>
-                <input
-                  type="number"
-                  value={yearBought}
-                  onChange={(e) => setYearBought(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Enter year purchased"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Initial Calculator Mode</label>
-                <select
-                  value={propertyType}
-                  onChange={(e) => setPropertyType(e.target.value as 'investment' | 'homeSale')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="investment">Investment Property</option>
-                  <option value="homeSale">Home Sale</option>
-                </select>
-              </div>
-            </div>
+            )}
+            
             <div className="flex justify-end space-x-3 mt-6">
               <button
                 onClick={() => {
@@ -583,6 +689,9 @@ export default function Home() {
                   setMarketValue('')
                   setYearBought('')
                   setPropertyType('investment')
+                  setPurchasePrice('')
+                  setDownPayment('')
+                  setInterestRate('')
                 }}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800"
               >
@@ -590,10 +699,10 @@ export default function Home() {
               </button>
               <button
                 onClick={createNewProperty}
-                disabled={!streetAddress.trim()}
+                disabled={!streetAddress.trim() || (propertiesCollection.properties.length === 0 && (!purchasePrice.trim() || !interestRate.trim()))}
                 className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
               >
-                Create Property
+                {propertiesCollection.properties.length === 0 ? 'Add Property' : 'Create Property'}
               </button>
             </div>
           </div>

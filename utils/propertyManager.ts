@@ -69,6 +69,9 @@ export function createProperty(
     use1031Exchange: false,
     selectedReplacementPropertyId: null,
     qiFees: 1500, // Default QI fee
+    
+    // 5-Year Analysis data
+    customAssumptions: null, // Use global assumptions by default
   }
 }
 
@@ -239,5 +242,8 @@ function migrateLegacyProperty(legacyProperty: any): Property {
     use1031Exchange: legacyProperty.use1031Exchange || false,
     selectedReplacementPropertyId: legacyProperty.selectedReplacementPropertyId || null,
     qiFees: legacyProperty.qiFees || 1500,
+    
+    // 5-Year Analysis data
+    customAssumptions: null, // Use global assumptions by default
   }
 }

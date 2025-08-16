@@ -121,7 +121,7 @@ HomeCalcs is a collection of financial calculator tools designed for homeowners 
 **Purpose**: Compare current property with alternatives over a 5-year period to make informed "keep vs. switch" decisions
 
 #### Core Features
-- **Property Comparison**: Compare current owned property with up to 2 alternative properties
+- **Property Comparison**: Compare current owned property with up to 9 alternative properties (10 total)
 - **Time-Based Analysis**: 5-year projections with configurable assumptions
 - **Decision Framework**: Focus on "keep current property" vs. "switch to alternative" scenarios
 - **Visual Indicators**: Clear labeling of "Current" vs. "Alternative" properties
@@ -140,7 +140,7 @@ HomeCalcs is a collection of financial calculator tools designed for homeowners 
 - **Missing Data Handling**: Graceful handling of incomplete property information
 
 #### Technical Implementation
-- **Performance Optimized**: Maximum 3 properties simultaneously for optimal performance
+- **Performance Optimized**: Maximum 10 properties simultaneously for optimal performance
 - **Responsive Design**: Vertical stack layout for mobile comparison tables
 - **Data Validation**: Comprehensive input validation with specific missing field identification
 - **Type Safety**: Full TypeScript support with proper interfaces and null handling
