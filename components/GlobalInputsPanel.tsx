@@ -375,9 +375,6 @@ export default function GlobalInputsPanel({
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
               placeholder={property.taxTimeframe === 'monthly' ? 'Monthly property taxes' : 'Annual property taxes'}
             />
-            <p className="text-sm text-gray-500 mt-1">
-              {property.taxTimeframe === 'monthly' ? 'Monthly amount' : 'Annual amount'}
-            </p>
           </div>
           
           {/* Insurance */}
@@ -433,9 +430,6 @@ export default function GlobalInputsPanel({
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
               placeholder={property.insuranceTimeframe === 'monthly' ? 'Monthly insurance' : 'Annual insurance'}
             />
-            <p className="text-sm text-gray-500 mt-1">
-              {property.insuranceTimeframe === 'monthly' ? 'Monthly amount' : 'Annual amount'}
-            </p>
           </div>
           
           {/* HOA Fees */}
@@ -489,9 +483,6 @@ export default function GlobalInputsPanel({
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
               placeholder="HOA fees"
             />
-            <p className="text-sm text-gray-500 mt-1">
-              {property.hoaInputType === 'monthly' ? 'Monthly amount' : 'Annual amount'}
-            </p>
             <div className="flex items-center">
               <input
                 type="checkbox"
@@ -555,9 +546,6 @@ export default function GlobalInputsPanel({
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
               placeholder="Property management fee"
             />
-            <p className="text-sm text-gray-500 mt-1">
-              {property.propertyManagementInputType === 'dollar' ? 'Dollar amount' : 'Percentage of rent'}
-            </p>
             <div className="flex items-center">
               <input
                 type="checkbox"
@@ -621,9 +609,6 @@ export default function GlobalInputsPanel({
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
               placeholder="Maintenance reserve"
             />
-            <p className="text-sm text-gray-500 mt-1">
-              {property.maintenanceInputType === 'dollar' ? 'Dollar amount' : 'Percentage of rent'}
-            </p>
             <div className="flex items-center">
               <input
                 type="checkbox"
@@ -726,9 +711,6 @@ export default function GlobalInputsPanel({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 placeholder="Realtor commission"
               />
-              <p className="text-sm text-gray-500 mt-1">
-                {property.realtorCommissionInputType === 'dollar' ? 'Dollar amount' : 'Percentage of sale price'}
-              </p>
             </div>
             
             <div>
@@ -746,7 +728,7 @@ export default function GlobalInputsPanel({
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Capital Gains Tax Rate (%)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Fed. Cap. Gains Tax Rate (%)</label>
               <input
                 type="number"
                 step="0.01"
@@ -860,9 +842,6 @@ export default function GlobalInputsPanel({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 placeholder="Gross rental income"
               />
-              <p className="text-sm text-gray-500 mt-1">
-                {property.rentalIncomeInputType === 'monthly' ? 'Monthly amount' : 'Annual amount'}
-              </p>
             </div>
             
             <div>

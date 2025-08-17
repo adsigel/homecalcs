@@ -22,7 +22,7 @@ export default function Header({ onShowManageModal, onAuthStateChange }: HeaderP
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl xl:max-w-[1400px] 2xl:max-w-[1600px] mx-auto px-6 sm:px-8 lg:px-12 xl:px-16">
         <div className="flex justify-between items-center h-16">
           {/* App Logo/Name */}
           <div className="flex items-center">

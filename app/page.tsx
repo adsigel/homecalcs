@@ -40,6 +40,9 @@ export default function Home() {
   const [downPayment, setDownPayment] = useState('')
   const [interestRate, setInterestRate] = useState('')
   
+  // Toast notification state
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+  
   // Format handlers for first property modal
   const handlePurchasePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^\d]/g, '')
@@ -60,12 +63,25 @@ export default function Home() {
       setDownPayment(formatNumber(numValue))
     }
   }
+  
+  // Toast notification functions
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type })
+    setTimeout(() => setToast(null), 3000) // Auto-hide after 3 seconds
+  }
 
   // Handle properties collection changes
   const handlePropertiesCollectionChange = useCallback((updatedCollection: PropertiesCollection) => {
     setPropertiesCollection(updatedCollection)
-    savePropertiesCollection(updatedCollection).catch(error => {
+    savePropertiesCollection(updatedCollection).then(success => {
+      if (success) {
+        showToast('Properties updated successfully!', 'success')
+      } else {
+        showToast('Failed to save property changes. Please try again.', 'error')
+      }
+    }).catch(error => {
       console.error('Failed to save properties collection:', error)
+      showToast('Error saving property changes. Please try again.', 'error')
     })
   }, [])
 
@@ -107,13 +123,14 @@ export default function Home() {
     savePropertiesCollection(updatedCollection).then(success => {
       if (success) {
         console.log('✅ Property saved successfully')
-        // Could add a toast notification here
+        showToast('Property saved successfully!', 'success')
       } else {
         console.error('❌ Failed to save property')
-        // Could add an error notification here
+        showToast('Failed to save property. Please try again.', 'error')
       }
     }).catch(error => {
       console.error('❌ Error saving property:', error)
+      showToast('Error saving property. Please try again.', 'error')
     })
   }
 
@@ -223,10 +240,10 @@ export default function Home() {
     setShowSaveDialog(true)
   }
 
-  // Show rename modal
+  // Show edit address modal
   const handleShowRenameModal = (property: Property) => {
     setPropertyToRename(property)
-    setStreetAddress(property.name)
+    setStreetAddress(property.streetAddress)
     setShowRenameModal(true)
   }
 
@@ -278,8 +295,15 @@ export default function Home() {
       trackFirstPropertyCreated(newProperty.id, 'investment')
     }
     
-    savePropertiesCollection(updatedCollection).catch(error => {
+    savePropertiesCollection(updatedCollection).then(success => {
+      if (success) {
+        showToast('Property created successfully!', 'success')
+      } else {
+        showToast('Failed to save new property. Please try again.', 'error')
+      }
+    }).catch(error => {
       console.error('Failed to save new property:', error)
+      showToast('Error creating property. Please try again.', 'error')
     })
   }
 
@@ -304,11 +328,11 @@ export default function Home() {
     })
   }
 
-  // Rename property
+  // Update property address
   const handleRenameProperty = () => {
     if (!propertyToRename || !streetAddress.trim()) return
 
-    const updatedProperty = { ...propertyToRename, name: streetAddress.trim() }
+    const updatedProperty = { ...propertyToRename, streetAddress: streetAddress.trim() }
     const updatedCollection = {
       ...propertiesCollection,
       properties: propertiesCollection.properties.map(p => 
@@ -316,10 +340,10 @@ export default function Home() {
       )
     }
     
-    // Track property rename with Amplitude
+    // Track property address update with Amplitude
     trackPropertyRenamed(
       propertyToRename.id,
-      propertyToRename.name || 'Unnamed Property',
+      propertyToRename.streetAddress || 'Unknown Address',
       streetAddress.trim()
     )
     
@@ -329,8 +353,15 @@ export default function Home() {
     }
     setShowRenameModal(false)
     
-    savePropertiesCollection(updatedCollection).catch(error => {
-      console.error('Failed to save renamed property:', error)
+    savePropertiesCollection(updatedCollection).then(success => {
+      if (success) {
+        showToast('Property address updated successfully!', 'success')
+      } else {
+        showToast('Failed to save address update. Please try again.', 'error')
+      }
+    }).catch(error => {
+      console.error('Failed to save address update:', error)
+      showToast('Error updating address. Please try again.', 'error')
     })
   }
 
@@ -565,6 +596,44 @@ export default function Home() {
         )}
       </main>
 
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50">
+          <div className={`px-4 py-3 rounded-lg shadow-lg max-w-sm ${
+            toast.type === 'success' 
+              ? 'bg-green-500 text-white' 
+              : 'bg-red-500 text-white'
+          }`}>
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                {toast.type === 'success' ? (
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium">{toast.message}</p>
+              </div>
+              <div className="ml-auto pl-3">
+                <button
+                  onClick={() => setToast(null)}
+                  className="inline-flex text-white hover:text-gray-200 focus:outline-none focus:text-gray-200"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* New Property Dialog */}
       {showNewPropertyDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -757,20 +826,21 @@ export default function Home() {
         </div>
       )}
 
-      {/* Rename Property Modal */}
+      {/* Edit Property Address Modal */}
       {showRenameModal && propertyToRename && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold mb-4">Rename Property</h3>
+            <h3 className="text-lg font-semibold mb-4">Edit Property Address</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Property Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
                 <input
                   type="text"
                   value={streetAddress}
                   onChange={(e) => setStreetAddress(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Enter new property name"
+                  placeholder="Enter new street address"
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -786,7 +856,7 @@ export default function Home() {
                 disabled={!streetAddress.trim()}
                 className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
               >
-                Rename Property
+                Update Address
               </button>
             </div>
           </div>

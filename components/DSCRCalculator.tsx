@@ -112,7 +112,7 @@ export default function DSCRCalculator({ property, onUpdate, calculatorMode, pro
             {/* Cash Flow Column */}
             <div className="space-y-4">
               <div className="bg-white p-4 rounded-lg border border-green-200">
-                <div className={`text-lg font-semibold ${
+                <div className={`text-2xl font-bold ${
                   (dscrCalculation.grossAnnualRentalIncome - dscrCalculation.annualExpenses.total - dscrCalculation.annualPITI) >= 0 ? 'text-green-600' : 'text-red-600'
                 }`}>
                   {formatCurrency((dscrCalculation.grossAnnualRentalIncome - dscrCalculation.annualExpenses.total - dscrCalculation.annualPITI) / 12)}

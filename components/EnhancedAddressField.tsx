@@ -84,20 +84,20 @@ export default function EnhancedAddressField({
               type="text"
               value={tempAddress}
               onChange={(e) => handleAddressChange(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              onClick={() => allProperties.length > 0 && setIsDropdownOpen(!isDropdownOpen)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 cursor-pointer"
               placeholder="Enter street address"
               autoComplete="off"
+              data-1p-ignore
+              data-lpignore="true"
+              data-form-type="other"
             />
             
-            {/* Dropdown Toggle */}
+            {/* Dropdown Indicator */}
             {allProperties.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
                 <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
+              </div>
             )}
           </div>
           
@@ -142,7 +142,7 @@ export default function EnhancedAddressField({
       </div>
 
       {/* Status Messages */}
-      {existingProperty && (
+      {/* {existingProperty && (
         <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded-md">
           ✓ Found existing property: {existingProperty.name || 'Unnamed'} 
           ({existingProperty.activeMode === 'investment' ? 'Investment' : 'Home Sale'})
@@ -153,7 +153,7 @@ export default function EnhancedAddressField({
         <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded-md">
           This appears to be a new address. Click the + button to create a new property.
         </div>
-      )}
+      )} */}
     </div>
   )
 }

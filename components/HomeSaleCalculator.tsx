@@ -162,7 +162,7 @@ export default function HomeSaleCalculator({ property, propertiesCollection }: H
                               <span className="font-medium">${((property.salePrice || 0) - (property.purchasePrice || 0)).toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="text-gray-600">Tax Rate</span>
+              <span className="text-gray-600">Federal Tax Rate</span>
               <span className="font-medium">{property.capitalGainsTaxRate}%</span>
             </div>
             {calculation.use1031Exchange && (calculation.boot || 0) > 0 && (
